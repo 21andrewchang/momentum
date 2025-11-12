@@ -635,7 +635,7 @@
 				{:else}
 					{#each people as person}
 						<div class="flex w-full flex-col space-y-1">
-							<div class="flex h-6 items-center gap-2 bg-red-400">
+							<div class="flex h-6 items-center gap-2">
 								<span>{person.label}</span>
 								{#if viewerUserId === person.user_id}
 									<span class="rounded bg-stone-200 px-2 py-0.5 text-[10px] text-stone-700"
@@ -697,9 +697,7 @@
 	{:else}
 		<div
 			class="mt-1 flex h-7 w-full items-center justify-center rounded px-3 text-xs font-semibold tracking-wide text-stone-400 uppercase"
-			class:bg-amber-200={isNightWindow}
 			class:bg-stone-100={!isNightWindow}
-			class:text-stone-900={isNightWindow}
 		></div>
 	{/if}
 </div>
