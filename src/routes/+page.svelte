@@ -297,6 +297,7 @@
 		const title = getTitle(viewerUserId, hour, selectedSlot.half);
 		if (title.trim().length > 0) return false;
 		openEditor(viewerUserId, hour, selectedSlot.half);
+		setSelectedSlot(null);
 		return true;
 	}
 
@@ -413,7 +414,6 @@
 				break;
 			case 'Enter':
 				handled = activateSelectedSlotFromKeyboard();
-				setSelectedSlot(null);
 				break;
 		}
 		if (handled) event.preventDefault();

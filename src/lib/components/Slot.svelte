@@ -90,7 +90,7 @@
 
 <button
 	class={`${baseClasses} ${habitClasses}`}
-	class:ring-2={selected}
+	class:ring-1={selected}
 	class:ring-stone-400={selected}
 	class:ring-offset-1={selected}
 	class:ring-offset-stone-50={selected}
@@ -102,7 +102,7 @@
 		<span class="text-xs leading-none">{habitPreset.icon}</span>
 	{/if}
 
-	<span class="ml-1 flex-1 truncate text-left text-xs">
+	<span class="ml-1 min-w-0 flex-1 truncate text-left text-xs">
 		{#if isFilled}
 			{trimmed}
 		{:else if habitPlaceholder}
