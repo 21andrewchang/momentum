@@ -825,6 +825,7 @@
 </script>
 
 <div class="flex flex-col overflow-clip bg-stone-50 p-4">
+	<button onclick={notifyCurrentSlot}>notif</button>
 	<div class="flex flex-row space-x-4">
 		<div class="flex flex-col space-y-1">
 			<div class="text-stone-50">T</div>
