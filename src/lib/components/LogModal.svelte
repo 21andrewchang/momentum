@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { fade, scale } from 'svelte/transition';
+	import { fade, fly, scale } from 'svelte/transition';
 
 	const HOURS = Array.from({ length: 24 }, (_, i) => i);
 	const hh = (n: number) => n.toString().padStart(2, '0');
@@ -78,6 +78,7 @@
 		habitHalf = (initialHalf ?? fallback.half) as 0 | 1;
 		makeHabit = false;
 	});
+	$inspect(habitHalf);
 
 	function fillPreset(s: string) {
 		text = s;
@@ -98,44 +99,40 @@
 	>
 		<div
 			in:scale={{ start: 0.95, duration: 160 }}
-			class="w-full max-w-lg rounded-xl border border-stone-200 bg-white/95 text-stone-800 shadow-[0_12px_32px_rgba(15,15,15,0.12)]"
+			class="w-full max-w-xl rounded-xl border border-stone-200 bg-white/95 text-stone-800 shadow-[0_12px_32px_rgba(15,15,15,0.12)]"
 		>
-			{#if makeHabit}
-				<div class="flex flex-col gap-2 text-xs text-stone-600 sm:flex-row sm:items-center">
-					<div class="flex items-center gap-2">
-						<span class="text-[11px] tracking-wide text-stone-500 uppercase">Hour</span>
-						<select
-							class="rounded-lg border border-stone-200 bg-white px-2 py-1 text-xs text-stone-900 shadow-sm focus-visible:ring-2 focus-visible:ring-stone-500 focus-visible:outline-none"
-							value={habitHour}
-							onchange={(event) =>
-								(habitHour = Number((event.currentTarget as HTMLSelectElement).value))}
-						>
-							{#each HOURS as h}
-								<option value={h}>{hh(h)}</option>
-							{/each}
-						</select>
-					</div>
-					<div class="flex items-center gap-2">
-						<span class="text-[11px] tracking-wide text-stone-500 uppercase">Block</span>
-						<div class="flex gap-1">
-							<button
-								type="button"
-								class={`rounded-lg border px-2 py-1 text-xs font-medium transition ${habitHalf === 0 ? 'border-stone-900 bg-stone-900 text-white' : 'border-stone-200 text-stone-700 hover:border-stone-300'}`}
-								onclick={() => (habitHalf = 0)}
-							>
-								:00
-							</button>
-							<button
-								type="button"
-								class={`rounded-lg border px-2 py-1 text-xs font-medium transition ${habitHalf === 1 ? 'border-stone-900 bg-stone-900 text-white' : 'border-stone-200 text-stone-700 hover:border-stone-300'}`}
-								onclick={() => (habitHalf = 1)}
-							>
-								:30
-							</button>
-						</div>
-					</div>
+			<div class="flex flex-row gap-2 p-4 pb-0 text-xs text-stone-600">
+				<div class="flex items-center gap-2">
+					<span class="text-[11px] tracking-wide text-stone-500 uppercase">Hour</span>
+					<select
+						class="rounded-lg border border-stone-200 bg-white px-2 py-1 text-xs text-stone-900 shadow-sm focus-visible:ring-2 focus-visible:ring-stone-500 focus-visible:outline-none"
+						value={habitHour}
+						onchange={(event) =>
+							(habitHour = Number((event.currentTarget as HTMLSelectElement).value))}
+					>
+						{#each HOURS as h}
+							<option value={h}>{hh(h)}</option>
+						{/each}
+					</select>
 				</div>
-			{/if}
+				<button
+					class="inline-flex items-center gap-1 rounded-md px-2 text-[11px] tracking-wide text-stone-500 uppercase hover:bg-stone-200"
+					onclick={() => (habitHalf = habitHalf ? 0 : 1)}
+				>
+					Block
+					<span class="relative inline-block h-[1.25em] w-[1em] overflow-hidden align-middle">
+						{#key habitHalf}
+							<span
+								class="absolute inset-0 flex items-center justify-center leading-none"
+								in:fly={{ y: habitHalf ? -10 : 10, duration: 180 }}
+								out:fly={{ y: habitHalf ? 10 : -10, duration: 180 }}
+							>
+								{habitHalf ? 'B' : 'A'}
+							</span>
+						{/key}
+					</span>
+				</button>
+			</div>
 			<div class="flex w-full flex-row items-center">
 				<input
 					bind:this={inputEl}
