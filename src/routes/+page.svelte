@@ -116,6 +116,50 @@
 	function clampHourIndex(idx: number) {
 		return Math.max(0, Math.min(hours.length - 1, idx));
 	}
+	function slotIsEmpty(user_id: string, h: number, half01: 0 | 1) {
+		return getTitle(user_id, h, half01).trim().length === 0;
+	}
+	async function insertHabitHours(
+		user_id: string,
+		day_id: string | null,
+		entries: { hour: number; half: 0 | 1; name: string }[]
+	) {
+		if (!day_id || entries.length === 0) return;
+		const payload = entries.map(({ hour, half, name }) => ({
+			day_id,
+			hour,
+			half: half === 1,
+			title: name,
+			todo: false,
+			habit: true
+		}));
+		const { error } = await supabase
+			.from('hours')
+			.upsert(payload, { onConflict: 'day_id,hour,half' });
+		if (error) {
+			console.error('habit hour insert error', error);
+			return;
+		}
+		for (const { hour, half, name } of entries) {
+			setTitle(user_id, hour, half, name, false);
+		}
+	}
+	async function ensureHabitHoursForDay(user_id: string, day_id: string | null) {
+		if (!day_id) return;
+		const userHabits = habitsByUser[user_id];
+		if (!userHabits) return;
+		const pending: { hour: number; half: 0 | 1; name: string }[] = [];
+		for (const [hourStr, row] of Object.entries(userHabits)) {
+			const hour = Number(hourStr);
+			if (Number.isNaN(hour)) continue;
+			if (row.first && slotIsEmpty(user_id, hour, 0))
+				pending.push({ hour, half: 0, name: row.first });
+			if (row.second && slotIsEmpty(user_id, hour, 1))
+				pending.push({ hour, half: 1, name: row.second });
+		}
+		if (pending.length === 0) return;
+		await insertHabitHours(user_id, day_id, pending);
+	}
 	function setSelectedSlot(next: SelectedSlot | null) {
 		if (!viewerUserId || next === null) {
 			selectedSlot = null;
@@ -299,12 +343,26 @@
 		const day_id = dayIdByUser[user_id];
 		if (!day_id) return;
 
+		const hourPayload: {
+			day_id: string;
+			hour: number;
+			half: boolean;
+			title: string;
+			todo: boolean | null;
+			habit?: boolean;
+		} = {
+			day_id,
+			hour,
+			half: half === 1,
+			title: text,
+			todo
+		};
+		if (habit && habit.hour === hour && habit.half === half) {
+			hourPayload.habit = true;
+		}
 		const { error } = await supabase
 			.from('hours')
-			.upsert(
-				{ day_id, hour, half: half === 1, title: text, todo },
-				{ onConflict: 'day_id,hour,half' }
-			);
+			.upsert(hourPayload, { onConflict: 'day_id,hour,half' });
 
 		if (error) {
 			console.error('save error', error);
@@ -329,6 +387,9 @@
 				console.error('habit save error', habitErr);
 			} else {
 				setHabitTitle(user_id, habitHour, habitHalf, name);
+				if (slotIsEmpty(user_id, habitHour, habitHalf)) {
+					await insertHabitHours(user_id, day_id, [{ hour: habitHour, half: habitHalf, name }]);
+				}
 			}
 		}
 
@@ -487,6 +548,7 @@
 				const tasks: Promise<void>[] = [loadHabitsForUser(user_id)];
 				if (dayId) tasks.push(loadHoursForDay(user_id, dayId));
 				await Promise.all(tasks);
+				if (dayId) await ensureHabitHoursForDay(user_id, dayId);
 			})
 		);
 

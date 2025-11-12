@@ -72,7 +72,7 @@
 </script>
 
 <button
-	class="flex w-full flex-row items-center rounded-sm bg-stone-100 p-2 transition hover:bg-stone-200"
+	class="flex w-full flex-row items-center rounded-sm bg-stone-100 p-2 transition hover:bg-stone-200 focus:border-0 focus:outline-0"
 	class:ring-2={selected}
 	class:ring-stone-400={selected}
 	class:ring-offset-1={selected}
