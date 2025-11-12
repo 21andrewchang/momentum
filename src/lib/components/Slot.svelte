@@ -69,10 +69,6 @@
 			handleSlotClick();
 		}
 	}
-
-	function handleTodoClick() {
-		if (!editable || !showTodo) return;
-	}
 </script>
 
 <button

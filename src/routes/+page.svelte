@@ -59,10 +59,21 @@
 		slotsByUser[user_id][h] ??= { first: createEmptySlot(), second: createEmptySlot() };
 		return slotsByUser[user_id][h];
 	}
-	function setTitle(user_id: string, h: number, half01: 0 | 1, text: string) {
+	function setTitle(
+		user_id: string,
+		h: number,
+		half01: 0 | 1,
+		text: string,
+		todo?: boolean | null
+	) {
 		const row = ensureSlotRow(user_id, h);
-		if (half01 === 0) row.first.title = text;
-		else row.second.title = text;
+		if (half01 === 0) {
+			row.first.title = text;
+			if (todo !== undefined) row.first.todo = todo;
+		} else {
+			row.second.title = text;
+			if (todo !== undefined) row.second.todo = todo;
+		}
 	}
 	function setTodo(user_id: string, h: number, half01: 0 | 1, value: boolean | null) {
 		const row = ensureSlotRow(user_id, h);
@@ -128,25 +139,27 @@
 		logOpen = true;
 	}
 
-	async function saveLog(text: string) {
+	async function saveLog(text: string, todo: boolean | null) {
 		const { user_id, hour, half } = draft;
 		if (!user_id || hour == null || half == null) return;
 		const day_id = dayIdByUser[user_id];
 		if (!day_id) return;
-		const halfBool = half === 1;
-		const currentTodo = getTodo(user_id, hour, half);
 
 		const { error } = await supabase
 			.from('hours')
 			.upsert(
-				{ day_id, hour, half: halfBool, title: text, todo: currentTodo },
+				{ day_id, hour, half: half === 1, title: text, todo },
 				{ onConflict: 'day_id,hour,half' }
 			);
+
 		if (error) {
 			console.error('save error', error);
 			return;
 		}
-		setTitle(user_id, hour, half, text);
+
+		// update local cache with both title and todo
+		setTitle(user_id, hour, half, text, todo);
+
 		logOpen = false;
 	}
 
@@ -157,7 +170,6 @@
 		const slot = getSlot(user_id, hour, half);
 		if (slot.todo === null) return;
 		const nextTodo = !slot.todo;
-
 		const { error } = await supabase.from('hours').upsert(
 			{
 				day_id,
