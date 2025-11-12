@@ -2,12 +2,15 @@
 	import ConfirmMoveModal from '$lib/components/ConfirmMoveModal.svelte';
 	import LogModal from '$lib/components/LogModal.svelte';
 	import Slot from '$lib/components/Slot.svelte';
-	import { onMount } from 'svelte';
+	import { getContext, onMount } from 'svelte';
 	import { supabase } from '$lib/supabaseClient';
+	import type { Writable } from 'svelte/store';
+	import type { Session } from '$lib/session';
 
 	type Person = { label: string; user_id: string };
 
 	let people = $state<Person[]>([]);
+	const session = getContext<Writable<Session>>('session');
 
 	const START_HOUR = 8;
 	const END_HOUR = 24;
@@ -768,6 +771,9 @@
 		} catch (e) {
 			console.error('logout failed', e);
 		} finally {
+			if (session) {
+				session.set({ user: null, name: '', loading: false });
+			}
 			if (typeof window !== 'undefined') {
 				window.location.reload();
 			}
@@ -841,7 +847,7 @@
 	});
 </script>
 
-<div class="flex flex-col overflow-clip bg-stone-50 p-4">
+<div class="flex h-dvh w-full flex-col justify-center overflow-clip bg-stone-50 p-10">
 	<div class="flex flex-row space-x-4">
 		<div class="flex flex-col space-y-1">
 			<div class="text-stone-50">T</div>
