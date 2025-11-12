@@ -881,7 +881,7 @@
 										class:opacity-60={viewerUserId !== person.user_id}
 									>
 										<div
-											class="flex w-full bg-transparent"
+											class="flex w-full min-w-0 bg-transparent"
 											role="presentation"
 											draggable={canDragSlot(person.user_id, h, 0)}
 											ondragstart={(event) =>
@@ -902,7 +902,7 @@
 											/>
 										</div>
 										<div
-											class="flex w-full bg-transparent"
+											class="flex w-full min-w-0 bg-transparent"
 											role="presentation"
 											draggable={canDragSlot(person.user_id, h, 1)}
 											ondragstart={(event) =>

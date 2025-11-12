@@ -56,7 +56,7 @@
 
 	// Build classes
 	const baseClasses =
-		'flex w-full flex-row items-center rounded-sm  p-2 transition  focus:outline-0';
+		'flex w-full min-w-0 flex-row items-center rounded-sm  p-2 transition overflow-hidden focus:outline-0';
 	const habitClasses = $derived(
 		isHabit
 			? `border-dotted hover:border-solid border ${theme?.border ?? 'border-stone-300'} ${
