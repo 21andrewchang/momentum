@@ -17,7 +17,7 @@
 		if (!session) return;
 		const unsub = session.subscribe((value) => {
 			if (!value.loading && value.user) {
-				void goto('/');
+				// void goto('/');
 			}
 		});
 		return () => unsub();
@@ -62,22 +62,22 @@
 >
 	<div class="pointer-events-none absolute inset-0 flex">
 		<div
-			class="h-full w-1/2 bg-cover bg-center opacity-40"
-			style="background-image:url('/graves.jpg');"
+			class="h-full w-1/2 bg-cover bg-[center_right_30%] opacity-40"
+			style="background-image:url('/graves.jpg'); transform-origin:center;"
 		></div>
 		<div
-			class="h-full w-1/2 bg-cover bg-center opacity-40"
-			style="background-image:url('/toycho.jpg');"
+			class="h-full w-1/2 bg-cover bg-[center_right_30%] opacity-40"
+			style="background-image:url('/toycho.jpg'); transform-origin:center;"
 		></div>
 	</div>
 	<div
 		class="absolute inset-0 bg-gradient-to-b from-stone-950/80 via-stone-950/60 to-stone-950"
 	></div>
 	<div
-		class="relative z-10 w-full max-w-xl rounded-2xl border border-white/10 bg-white/85 p-6 text-stone-900 shadow-[0_25px_60px_rgba(15,15,15,0.35)] backdrop-blur"
+		class="relative z-10 w-full max-w-md rounded-2xl border border-white/10 bg-white/10 p-6 text-stone-900 shadow-[0_25px_60px_rgba(15,15,15,0.35)] backdrop-blur"
 	>
 		<div class="mb-5 space-y-1 text-center text-stone-600">
-			<p class="text-3xl font-semibold tracking-tight text-stone-900">welcome back jittington</p>
+			<p class="text-3xl font-semibold tracking-tight text-stone-100">welcome back jittington</p>
 		</div>
 		<form class="space-y-4" onsubmit={handleSubmit}>
 			<label class="block text-xs font-semibold text-stone-600">
@@ -105,7 +105,7 @@
 
 			<button
 				type="submit"
-				class="flex w-full items-center justify-center rounded-xl border border-stone-200 bg-stone-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-stone-800 focus-visible:ring-2 focus-visible:ring-stone-500 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+				class="flex w-full items-center justify-center rounded-xl bg-stone-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-stone-800 focus-visible:ring-2 focus-visible:ring-stone-500 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
 				disabled={loading}
 			>
 				{#if loading}
@@ -115,11 +115,5 @@
 				{/if}
 			</button>
 		</form>
-		<a
-			class="mt-6 flex items-center justify-center text-xs font-medium text-stone-500 underline-offset-2 hover:underline"
-			href="/"
-		>
-			Back to dashboard
-		</a>
 	</div>
 </div>

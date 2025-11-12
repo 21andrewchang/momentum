@@ -765,21 +765,6 @@
 		notifTimer = window.setTimeout(arm, msUntilNextBoundary());
 	}
 
-	async function handleLogout() {
-		try {
-			await supabase.auth.signOut();
-		} catch (e) {
-			console.error('logout failed', e);
-		} finally {
-			if (session) {
-				session.set({ user: null, name: '', loading: false });
-			}
-			if (typeof window !== 'undefined') {
-				window.location.reload();
-			}
-		}
-	}
-
 	async function init() {
 		try {
 			const { data: authData, error: authErr } = await supabase.auth.getUser();
@@ -970,15 +955,6 @@
 		></div>
 	{/if}
 </div>
-
-{#if viewerUserId}
-	<button
-		class="fixed bottom-4 left-4 z-50 inline-flex items-center gap-2 rounded-md border border-red-400 bg-red-100 p-1 px-2 text-[10px] font-semibold tracking-wide text-stone-700 uppercase"
-		onclick={handleLogout}
-	>
-		Logout
-	</button>
-{/if}
 
 <LogModal
 	open={logOpen}
