@@ -5,13 +5,42 @@
 	import type { Writable } from 'svelte/store';
 	import { goto } from '$app/navigation';
 
+	type HeroId = 'graves' | 'cho';
+	type Hero = {
+		id: HeroId;
+		label: string;
+		email: string;
+		image: string;
+		alignment: 'left' | 'right';
+	};
+
+	const HEROES: Hero[] = [
+		{
+			id: 'graves',
+			label: 'Andrew • Graves',
+			email: '21andrewch@gmail.com',
+			image: '/graves.jpg',
+			alignment: 'left'
+		},
+		{
+			id: 'cho',
+			label: "Nico • Cho'gath",
+			email: 'nicoluo@gmail.com',
+			image: '/toycho.jpg',
+			alignment: 'right'
+		}
+	];
+
+	const heroMap = Object.fromEntries(HEROES.map((h) => [h.id, h])) as Record<HeroId, Hero>;
+
+	const session = getContext<Writable<Session>>('session');
+
+	let selectedHero = $state<HeroId | null>(null);
 	let email = $state('');
 	let password = $state('');
 	let loading = $state(false);
 	let message = $state('');
 	let messageType = $state<'error' | 'success' | ''>('');
-
-	const session = getContext<Writable<Session>>('session');
 
 	onMount(() => {
 		if (!session) return;
@@ -23,9 +52,29 @@
 		return () => unsub();
 	});
 
+	function selectHero(id: HeroId) {
+		selectedHero = id;
+		email = heroMap[id].email;
+		message = '';
+		messageType = '';
+	}
+
+	function bgClasses(hero: Hero) {
+		const alignClass = hero.alignment === 'left' ? 'left-0' : 'right-0';
+		if (!selectedHero) return `${alignClass} w-1/2`;
+		return selectedHero === hero.id
+			? `${hero.alignment === 'left' ? 'left-0' : 'right-0'} w-full`
+			: `${alignClass} w-0`;
+	}
+
 	async function handleSubmit(event: SubmitEvent) {
 		event.preventDefault();
 		if (loading) return;
+		if (!selectedHero || !email) {
+			messageType = 'error';
+			message = 'Pick Graves or Cho to continue.';
+			return;
+		}
 		loading = true;
 		message = '';
 		messageType = '';
@@ -41,7 +90,7 @@
 				});
 			}
 			messageType = 'success';
-			message = 'Signed in. Redirecting…';
+			message = 'Locked in. Redirecting…';
 			setTimeout(() => void goto('/'), 600);
 		} catch (err) {
 			console.error('sign in error', err);
@@ -53,51 +102,40 @@
 	}
 </script>
 
-<svelte:head>
-	<title>Sign in • Momentum</title>
-</svelte:head>
-
 <div
 	class="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-stone-950 px-4 py-10 text-stone-50"
 >
-	<div class="pointer-events-none absolute inset-0 flex">
-		<div
-			class="h-full w-1/2 bg-cover bg-[center_right_30%] opacity-40"
-			style="background-image:url('/graves.jpg'); transform-origin:center;"
-		></div>
-		<div
-			class="h-full w-1/2 bg-cover bg-[center_right_30%] opacity-40"
-			style="background-image:url('/toycho.jpg'); transform-origin:center;"
-		></div>
+	<div class="pointer-events-none absolute inset-0">
+		{#each HEROES as hero}
+			<div
+				class={`absolute top-0 h-full bg-cover bg-[center_right_30%] opacity-40 transition-all duration-700 ease-out ${bgClasses(hero)}`}
+				style={`background-image:url('${hero.image}'); transform-origin:${hero.alignment};`}
+			></div>
+		{/each}
+	</div>
+	<div class="absolute inset-0 flex">
+		{#each HEROES as hero}
+			<button
+				type="button"
+				class={`flex-1 cursor-pointer bg-transparent transition duration-300 focus:outline-0`}
+				onclick={() => selectHero(hero.id)}
+				aria-label={`Play as ${hero.label}`}
+			></button>
+		{/each}
 	</div>
 	<div
-		class="absolute inset-0 bg-gradient-to-b from-stone-950/80 via-stone-950/60 to-stone-950"
-	></div>
-	<div
-		class="relative z-10 w-full max-w-md rounded-2xl border border-white/10 bg-white/10 p-6 text-stone-900 shadow-[0_25px_60px_rgba(15,15,15,0.35)] backdrop-blur"
+		class="relative z-10 w-full max-w-md rounded-2xl border border-white/10 bg-white/10 p-6 text-stone-50 shadow-[0_25px_60px_rgba(15,15,15,0.45)] backdrop-blur"
 	>
-		<div class="mb-5 space-y-1 text-center text-stone-600">
-			<p class="text-3xl font-semibold tracking-tight text-stone-100">welcome back jittington</p>
+		<div class="mb-5 space-y-2 text-center text-stone-200">
+			<p class="text-2xl font-semibold tracking-tight text-white">welcome back jittington</p>
 		</div>
 		<form class="space-y-4" onsubmit={handleSubmit}>
-			<label class="block text-xs font-semibold text-stone-600">
-				Email
-				<input
-					type="email"
-					required
-					class="mt-2 w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 transition outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-200"
-					placeholder="you@example.com"
-					bind:value={email}
-				/>
-			</label>
-
-			<label class="block text-xs font-semibold text-stone-600">
-				Password
+			<label class="block text-xs font-semibold text-stone-300">
 				<input
 					type="password"
 					required
 					minlength="6"
-					class="mt-2 w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 transition outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-200"
+					class="mt-2 w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm text-white transition outline-none placeholder:text-stone-400 focus:outline-none"
 					placeholder="••••••••"
 					bind:value={password}
 				/>
@@ -105,8 +143,7 @@
 
 			<button
 				type="submit"
-				class="flex w-full items-center justify-center rounded-xl bg-stone-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-stone-800 focus-visible:ring-2 focus-visible:ring-stone-500 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
-				disabled={loading}
+				class="flex w-full items-center justify-center rounded-xl bg-stone-900 px-4 py-3 text-sm font-semibold text-stone-50 transition focus-visible:outline-none"
 			>
 				{#if loading}
 					its time…
