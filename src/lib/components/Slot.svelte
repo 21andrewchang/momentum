@@ -25,6 +25,7 @@
 		editable?: boolean;
 		onSelect?: () => void;
 		onToggleTodo?: () => void;
+		selected?: boolean;
 	}>();
 
 	const title = $derived(props.title ?? '');
@@ -32,6 +33,7 @@
 	const onSelect = $derived(props.onSelect ?? (() => {}));
 	const todo = $derived(props.todo ?? null);
 	const onToggleTodo = $derived(props.onToggleTodo ?? (() => {}));
+	const selected = $derived(props.selected ?? false);
 
 	const trimmed = $derived((title ?? '').trim());
 	const isFilled = $derived(trimmed.length > 0);
@@ -73,6 +75,10 @@
 
 <button
 	class="flex w-full flex-row items-center rounded-sm bg-stone-100 p-2 transition hover:bg-stone-200"
+	class:ring-2={selected}
+	class:ring-stone-400={selected}
+	class:ring-offset-1={selected}
+	class:ring-offset-stone-50={selected}
 	role={canOpen ? 'button' : undefined}
 	onclick={handleSlotClick}
 	onkeydown={handleSlotKeydown}

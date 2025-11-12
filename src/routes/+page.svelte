@@ -34,6 +34,7 @@
 
 	type SlotValue = { title: string; todo: boolean | null };
 	type SlotRow = { first: SlotValue; second: SlotValue };
+	type SelectedSlot = { hourIndex: number; half: 0 | 1 };
 
 	const createEmptySlot = (): SlotValue => ({ title: '', todo: null });
 	let slotsByUser = $state<Record<string, Record<number, SlotRow>>>({});
@@ -45,6 +46,7 @@
 		hour: null,
 		half: null
 	});
+	let selectedSlot = $state<SelectedSlot | null>(null);
 
 	// prevent re-prompting within same slot
 	let lastPromptKey = $state<string | null>(null);
@@ -91,6 +93,107 @@
 	function getTodo(user_id: string, h: number, half01: 0 | 1) {
 		return getSlot(user_id, h, half01).todo ?? null;
 	}
+	function getHourIndex(value: number) {
+		return hours.findIndex((hour) => hour === value);
+	}
+	function clampHourIndex(idx: number) {
+		return Math.max(0, Math.min(hours.length - 1, idx));
+	}
+	function setSelectedSlot(next: SelectedSlot | null) {
+		if (!viewerUserId || next === null) {
+			selectedSlot = null;
+			return;
+		}
+		selectedSlot = {
+			hourIndex: clampHourIndex(next.hourIndex),
+			half: next.half === 1 ? 1 : 0
+		};
+	}
+	function ensureSelectionExists() {
+		if (!viewerUserId || selectedSlot) return;
+		const { hour, half } = slotInfoFromNow();
+		const idx = getHourIndex(hour);
+		setSelectedSlot({
+			hourIndex: idx === -1 ? 0 : idx,
+			half
+		});
+	}
+	function isTypingTarget(target: EventTarget | null) {
+		if (!(target instanceof HTMLElement)) return false;
+		const tag = target.tagName;
+		if (tag === 'INPUT' || tag === 'TEXTAREA') return true;
+		if (target.isContentEditable) return true;
+		return !!target.closest('input, textarea, [contenteditable="true"]');
+	}
+	function moveSelectionLeft() {
+		if (!viewerUserId || !selectedSlot) return false;
+		if (selectedSlot.half === 0) return true;
+		setSelectedSlot({ hourIndex: selectedSlot.hourIndex, half: 0 });
+		return true;
+	}
+	function moveSelectionRight() {
+		if (!viewerUserId || !selectedSlot) return false;
+		if (selectedSlot.half === 1) return true;
+		setSelectedSlot({ hourIndex: selectedSlot.hourIndex, half: 1 });
+		return true;
+	}
+	function moveSelectionVertical(delta: 1 | -1) {
+		if (!viewerUserId || !selectedSlot) return false;
+		const nextIndex = selectedSlot.hourIndex + delta;
+		if (nextIndex < 0 || nextIndex >= hours.length) return false;
+		setSelectedSlot({ hourIndex: nextIndex, half: selectedSlot.half });
+		return true;
+	}
+	function activateSelectedSlotFromKeyboard() {
+		if (!viewerUserId || !selectedSlot) return false;
+		const hour = hours[selectedSlot.hourIndex];
+		if (hour === undefined) return false;
+		const todoValue = getTodo(viewerUserId, hour, selectedSlot.half);
+		if (todoValue !== null) {
+			toggleTodo(viewerUserId, hour, selectedSlot.half);
+			return true;
+		}
+		const title = getTitle(viewerUserId, hour, selectedSlot.half);
+		if (title.trim().length > 0) return false;
+		openEditor(viewerUserId, hour, selectedSlot.half);
+		return true;
+	}
+	function handleGlobalKeydown(event: KeyboardEvent) {
+		if (!viewerUserId || logOpen) return;
+		if (event.metaKey || event.ctrlKey || event.altKey) return;
+		if (isTypingTarget(event.target)) return;
+		const key = event.key;
+		const normalized = key.length === 1 ? key.toLowerCase() : key;
+		if (normalized === 'Escape') {
+			if (selectedSlot) {
+				setSelectedSlot(null);
+				event.preventDefault();
+			}
+			return;
+		}
+		if (!['h', 'j', 'k', 'l', 'Enter'].includes(normalized)) return;
+		ensureSelectionExists();
+		if (!selectedSlot) return;
+		let handled = false;
+		switch (normalized) {
+			case 'h':
+				handled = moveSelectionLeft();
+				break;
+			case 'l':
+				handled = moveSelectionRight();
+				break;
+			case 'j':
+				handled = moveSelectionVertical(1);
+				break;
+			case 'k':
+				handled = moveSelectionVertical(-1);
+				break;
+			case 'Enter':
+				handled = activateSelectedSlotFromKeyboard();
+				break;
+		}
+		if (handled) event.preventDefault();
+	}
 
 	async function getTodayDayIdForUser(user_id: string, createIfMissing: boolean) {
 		const today = localToday();
@@ -135,6 +238,10 @@
 
 	function openEditor(user_id: string, h: number, half01: 0 | 1) {
 		if (viewerUserId !== user_id) return; // only edit your own column
+		const hourIndex = getHourIndex(h);
+		if (hourIndex !== -1) {
+			setSelectedSlot({ hourIndex, half: half01 });
+		}
 		draft = { user_id, hour: h, half: half01 };
 		logOpen = true;
 	}
@@ -285,6 +392,7 @@
 		const { data: auth, error: authErr } = await supabase.auth.getUser();
 		if (authErr) throw authErr;
 		viewerUserId = auth.user?.id ?? null;
+		if (!viewerUserId) selectedSlot = null;
 
 		const { data: rows, error: uerr } = await supabase
 			.from('users')
@@ -309,6 +417,7 @@
 		// Try prompting once right after initial load
 		maybePromptForMissing();
 		startHalfHourNotifier();
+		ensureSelectionExists();
 	}
 
 	onMount(() => {
@@ -322,7 +431,12 @@
 		tick();
 		const i = setInterval(tick, 60_000);
 		init().catch((e) => console.error('init failed', e));
-		return () => clearInterval(i);
+		const keyHandler = (event: KeyboardEvent) => handleGlobalKeydown(event);
+		window.addEventListener('keydown', keyHandler);
+		return () => {
+			clearInterval(i);
+			window.removeEventListener('keydown', keyHandler);
+		};
 	});
 </script>
 
@@ -341,7 +455,7 @@
 			{/each}
 		</div>
 
-		{#each people as person}
+		{#each people as person, personIndex}
 			<div class="flex w-full flex-col space-y-1">
 				<div class="flex items-center gap-2">
 					<span>{person.label}</span>
@@ -365,7 +479,7 @@
 						</div>
 					{/each}
 				{:else}
-					{#each hours as h}
+					{#each hours as h, hourIndex}
 						<div class="flex h-7 w-full flex-row space-x-1">
 							<Slot
 								title={getTitle(person.user_id, h, 0)}
@@ -373,6 +487,11 @@
 								editable={viewerUserId === person.user_id}
 								onSelect={() => openEditor(person.user_id, h, 0)}
 								onToggleTodo={() => toggleTodo(person.user_id, h, 0)}
+								selected={
+									viewerUserId === person.user_id &&
+									selectedSlot?.hourIndex === hourIndex &&
+									selectedSlot?.half === 0
+								}
 							/>
 							<Slot
 								title={getTitle(person.user_id, h, 1)}
@@ -380,6 +499,11 @@
 								editable={viewerUserId === person.user_id}
 								onSelect={() => openEditor(person.user_id, h, 1)}
 								onToggleTodo={() => toggleTodo(person.user_id, h, 1)}
+								selected={
+									viewerUserId === person.user_id &&
+									selectedSlot?.hourIndex === hourIndex &&
+									selectedSlot?.half === 1
+								}
 							/>
 						</div>
 					{/each}
