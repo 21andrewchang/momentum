@@ -893,10 +893,10 @@
 								{/each}
 							{:else}
 								{#each hours as h, hourIndex}
-										<div
-											class="hover:none flex h-7 w-full flex-row space-x-1"
-											class:opacity-60={viewerUserId && viewerUserId !== person.user_id}
-										>
+									<div
+										class="hover:none flex h-7 w-full flex-row space-x-1"
+										class:opacity-60={viewerUserId && viewerUserId !== person.user_id}
+									>
 										<div
 											class="flex w-full min-w-0 bg-transparent"
 											role="presentation"
@@ -967,10 +967,9 @@
 
 {#if viewerUserId}
 	<button
-		class="fixed bottom-4 left-4 z-50 inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white/90 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-stone-700 shadow-[0_12px_30px_rgba(15,15,15,0.12)] backdrop-blur-sm transition hover:bg-white"
+		class="fixed bottom-4 left-4 z-50 inline-flex items-center gap-2 rounded-md border border-red-400 bg-red-100 p-1 px-2 text-[10px] font-semibold tracking-wide text-stone-700 uppercase"
 		onclick={handleLogout}
 	>
-		<span class="h-2 w-2 rounded-full bg-emerald-500"></span>
 		Logout
 	</button>
 {/if}
