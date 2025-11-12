@@ -1,0 +1,116 @@
+<script lang="ts">
+	type HabitConfig = { icon: string; filled: string; empty: string };
+
+	const HABITS: Record<string, HabitConfig> = {
+		read: {
+			icon: '📖',
+			filled: 'border-amber-200 bg-amber-50 text-amber-900',
+			empty: 'border-amber-100 bg-amber-50 text-amber-700 hover:bg-amber-100'
+		},
+		meditate: {
+			icon: '🧘',
+			filled: 'border-emerald-200 bg-emerald-50 text-emerald-900',
+			empty: 'border-emerald-100 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+		},
+		gym: {
+			icon: '🏋️',
+			filled: 'border-sky-200 bg-sky-50 text-sky-900',
+			empty: 'border-sky-100 bg-sky-50 text-sky-800 hover:bg-sky-100'
+		}
+	};
+
+	const props = $props<{
+		title?: string;
+		todo?: boolean | null;
+		editable?: boolean;
+		onSelect?: () => void;
+		onToggleTodo?: () => void;
+	}>();
+
+	const title = $derived(props.title ?? '');
+	const editable = $derived(props.editable ?? false);
+	const onSelect = $derived(props.onSelect ?? (() => {}));
+	const todo = $derived(props.todo ?? null);
+	const onToggleTodo = $derived(props.onToggleTodo ?? (() => {}));
+
+	const trimmed = $derived((title ?? '').trim());
+	const isFilled = $derived(trimmed.length > 0);
+	const habitKey = $derived(trimmed.toLowerCase());
+	const habit = $derived(HABITS[habitKey]);
+
+	const BASE_SLOT =
+		'flex flex-row w-full items-center gap-2 rounded-md border px-2 py-1 text-xs font-medium bg-stone-50';
+	const DEFAULT_FILLED = 'border-stone-200 bg-white text-stone-900';
+	const DEFAULT_EMPTY = 'border-stone-100 bg-stone-100 text-stone-600 hover:bg-stone-200';
+	const DEFAULT_EMPTY_DISABLED = 'border-stone-100 bg-stone-100 text-stone-400';
+
+	const slotClasses = $derived(() => {
+		if (isFilled) {
+			return `${BASE_SLOT} ${habit ? habit.filled : DEFAULT_FILLED} flex flex-row justify-between w-full`;
+		}
+		const baseEmpty = habit ? habit.empty : DEFAULT_EMPTY;
+		const disabledState = `${BASE_SLOT} ${habit ? habit.empty : DEFAULT_EMPTY_DISABLED}  cursor-not-allowed`;
+		return editable ? `${BASE_SLOT} ${baseEmpty} cursor-pointer` : disabledState;
+	});
+
+	const showTodo = $derived(todo !== null);
+	const canOpen = $derived(editable && !isFilled);
+
+	function handleSlotClick() {
+		onToggleTodo();
+		if (!canOpen) return;
+		onSelect();
+	}
+
+	function handleSlotKeydown(event: KeyboardEvent) {
+		if (!canOpen) return;
+		if (event.key === 'Enter' || event.key === ' ') {
+			event.preventDefault();
+			handleSlotClick();
+		}
+	}
+
+	function handleTodoClick() {
+		if (!editable || !showTodo) return;
+	}
+</script>
+
+<button
+	class="flex w-full flex-row items-center rounded-sm bg-stone-100 p-2 transition hover:bg-stone-200"
+	role={canOpen ? 'button' : undefined}
+	onclick={handleSlotClick}
+	onkeydown={handleSlotKeydown}
+>
+	{#if habit}
+		<span class="text-xs leading-none">{habit.icon}</span>
+	{/if}
+	<span class="ml-1 flex-1 truncate text-left text-xs">
+		{#if isFilled}
+			{trimmed}
+		{:else}
+			&nbsp;
+		{/if}
+	</span>
+	{#if showTodo}
+		<div
+			class="relative ml-3 grid h-3 w-3 place-items-center rounded-full focus:outline-none
+			       {todo ? 'bg-stone-900' : ''}"
+		>
+			{#if todo}
+				<svg viewBox="0 0 24 24" class="h-3 w-3 text-stone-50" fill="none">
+					<path
+						d="M7 12.5 L10.25 15.75 L16.75 9.25"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					/>
+				</svg>
+			{:else}
+				<span
+					class="pointer-events-none absolute inset-0 rounded-full border border-[1px] border-stone-400 transition duration-200 ease-out"
+				/>
+			{/if}
+		</div>
+	{/if}
+</button>

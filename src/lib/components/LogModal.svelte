@@ -36,7 +36,7 @@
 		saving = true;
 		try {
 			const { hour, half } = currentSlot();
-			onSave({ text: value, hour, half });
+			onSave(value);
 			text = '';
 			onClose();
 		} finally {
@@ -68,20 +68,17 @@
 	>
 		<div
 			in:scale={{ start: 0.95, duration: 160 }}
-			class="w-full max-w-lg rounded-2xl border border-stone-200 bg-white/95 p-5 text-stone-800 shadow-[0_12px_32px_rgba(15,15,15,0.12)]"
+			class="w-full max-w-lg rounded-xl border border-stone-200 bg-white/95 p-2 pt-4 text-stone-800 shadow-[0_12px_32px_rgba(15,15,15,0.12)]"
 		>
 			<form class="space-y-4" onsubmit={handleSubmit}>
-				<label class="block text-xs font-medium text-stone-600">
-					Log
-					<input
-						bind:this={inputEl}
-						type="text"
-						placeholder="what are you doing?"
-						class="mt-2 w-full rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 transition outline-none"
-						bind:value={text}
-						autocomplete="off"
-					/>
-				</label>
+				<input
+					bind:this={inputEl}
+					type="text"
+					placeholder="what are you doing?"
+					class="w-full px-2 py-1 text-sm text-stone-800 transition outline-none"
+					bind:value={text}
+					autocomplete="off"
+				/>
 
 				<div class="flex items-center justify-between gap-2">
 					<div class="flex flex-row gap-1">
@@ -95,9 +92,9 @@
 						<button
 							type="button"
 							class="inline-flex items-center justify-center rounded-lg border border-stone-200 bg-stone-900 px-2 py-1 text-xs font-medium text-white transition hover:bg-stone-800"
-							onclick={() => fillPreset('Rise')}
+							onclick={() => fillPreset('Meditate')}
 						>
-							Rise
+							Meditate
 						</button>
 						<button
 							type="button"

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, onDestroy, setContext } from 'svelte';
+	import { onMount, setContext } from 'svelte';
 	import '../app.css';
 	import { writable, type Writable } from 'svelte/store';
 	import type { User } from '@supabase/supabase-js';
@@ -26,12 +26,6 @@
 	onMount(async () => {
 		const { data } = await supabase.auth.getUser();
 		applyUser(data.user ?? null);
-
-		// keep store in sync with future sign-in/out
-		const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
-			applyUser(s?.user ?? null);
-		});
-		onDestroy(() => sub.subscription.unsubscribe());
 	});
 
 	// Close modal if signed in
