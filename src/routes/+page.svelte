@@ -16,7 +16,8 @@
 	const hh = (n: number) => n.toString().padStart(2, '0');
 	const blockLabelText = (half: 0 | 1) => (half === 0 ? 'Block A' : 'Block B');
 	const slotTimeLabel = (hour: number, half: 0 | 1) => `${hh(hour)}:${half === 0 ? '00' : '30'}`;
-	const formatSlotLabel = (hour: number, half: 0 | 1) => `${slotTimeLabel(hour, half)} (${blockLabelText(half)})`;
+	const formatSlotLabel = (hour: number, half: 0 | 1) =>
+		`${slotTimeLabel(hour, half)} (${blockLabelText(half)})`;
 
 	const TEST_CLOCK = {
 		enabled: false,
@@ -58,7 +59,13 @@
 	type HabitSlotRow = { first: string | null; second: string | null };
 	type SelectedSlot = { hourIndex: number; half: 0 | 1 };
 	type DraggingSlot = { user_id: string; hour: number; half: 0 | 1 };
-	type PendingMove = { user_id: string; fromHour: number; fromHalf: 0 | 1; toHour: number; toHalf: 0 | 1 };
+	type PendingMove = {
+		user_id: string;
+		fromHour: number;
+		fromHalf: 0 | 1;
+		toHour: number;
+		toHalf: 0 | 1;
+	};
 
 	const createEmptySlot = (): SlotValue => ({ title: '', todo: null });
 	let slotsByUser = $state<Record<string, Record<number, SlotRow>>>({});
@@ -76,6 +83,7 @@
 	let dragHoverSlot = $state<SelectedSlot | null>(null);
 	let pendingMove = $state<PendingMove | null>(null);
 	let isMoveSubmitting = $state(false);
+	let dragImageEl: HTMLElement | null = null;
 	const pendingMoveSummary = $derived.by(() => {
 		if (!pendingMove) return null;
 		const { user_id, fromHour, fromHalf, toHour, toHalf } = pendingMove;
@@ -239,7 +247,9 @@
 	}
 	function slotIsHighlighted(user_id: string, hourIndex: number, half: 0 | 1) {
 		if (viewerUserId !== user_id) return false;
-		return slotMatches(selectedSlot, hourIndex, half) || slotMatches(dragHoverSlot, hourIndex, half);
+		return (
+			slotMatches(selectedSlot, hourIndex, half) || slotMatches(dragHoverSlot, hourIndex, half)
+		);
 	}
 	function isTypingTarget(target: EventTarget | null) {
 		if (!(target instanceof HTMLElement)) return false;
@@ -290,9 +300,16 @@
 		return true;
 	}
 
+	function cleanupDragImage() {
+		if (dragImageEl && dragImageEl.parentNode) {
+			dragImageEl.parentNode.removeChild(dragImageEl);
+		}
+		dragImageEl = null;
+	}
 	function resetDragState() {
 		draggingSlot = null;
 		dragHoverSlot = null;
+		cleanupDragImage();
 	}
 	function handleSlotDragStart(
 		event: DragEvent,
@@ -307,17 +324,36 @@
 		}
 		draggingSlot = { user_id, hour, half };
 		dragHoverSlot = { hourIndex, half };
-		if (event.dataTransfer) {
-			event.dataTransfer.effectAllowed = 'move';
-			event.dataTransfer.setData('text/plain', `${hour}-${half}`);
+			if (event.dataTransfer) {
+				event.dataTransfer.effectAllowed = 'move';
+				event.dataTransfer.setData('text/plain', `${hour}-${half}`);
+				const currentTarget = event.currentTarget as HTMLElement | null;
+				const buttonEl = currentTarget?.querySelector('button');
+				if (buttonEl) {
+					const rect = buttonEl.getBoundingClientRect();
+					if (typeof document !== 'undefined') {
+						cleanupDragImage();
+						const clone = buttonEl.cloneNode(true) as HTMLElement;
+						const computed = getComputedStyle(buttonEl);
+						clone.style.position = 'fixed';
+						clone.style.top = '-9999px';
+						clone.style.left = '-9999px';
+						clone.style.width = `${rect.width}px`;
+						clone.style.height = `${rect.height}px`;
+						clone.style.pointerEvents = 'none';
+						clone.style.margin = '0';
+						clone.style.boxShadow = computed.boxShadow || '0 10px 25px rgba(15,15,15,0.15)';
+						clone.style.borderRadius = computed.borderRadius;
+						document.body.appendChild(clone);
+						dragImageEl = clone;
+						event.dataTransfer.setDragImage(clone, rect.width / 2, rect.height / 2);
+					} else {
+						event.dataTransfer.setDragImage(buttonEl, rect.width / 2, rect.height / 2);
+					}
+				}
+			}
 		}
-	}
-	function handleSlotDragOver(
-		event: DragEvent,
-		user_id: string,
-		half: 0 | 1,
-		hourIndex: number
-	) {
+	function handleSlotDragOver(event: DragEvent, user_id: string, half: 0 | 1, hourIndex: number) {
 		if (!draggingSlot || draggingSlot.user_id !== user_id) return;
 		event.preventDefault();
 		event.stopPropagation();
@@ -845,7 +881,7 @@
 										class:opacity-60={viewerUserId !== person.user_id}
 									>
 										<div
-											class="flex w-full"
+											class="flex w-full bg-transparent"
 											role="presentation"
 											draggable={canDragSlot(person.user_id, h, 0)}
 											ondragstart={(event) =>
@@ -866,7 +902,7 @@
 											/>
 										</div>
 										<div
-											class="flex w-full"
+											class="flex w-full bg-transparent"
 											role="presentation"
 											draggable={canDragSlot(person.user_id, h, 1)}
 											ondragstart={(event) =>
