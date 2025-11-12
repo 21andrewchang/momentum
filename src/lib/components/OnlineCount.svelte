@@ -71,57 +71,30 @@
 	const label = $derived(dedupe ? 'unique viewers' : 'tabs online');
 </script>
 
-<div class="online-count" aria-live="polite">
-	<div class="online-count__value">
-		{#if counts.connected}
-			{total}
-		{:else}
-			--
-		{/if}
+<div class="group fixed top-3 right-3" aria-live="polite" aria-label="Live spectator count">
+	<div class="rounded-sm border border-red-400 px-1">
+		<div class="flex flex-row items-center gap-1 text-sm text-red-400">
+			<svg
+				viewBox="0 0 24 24"
+				fill="currentColor"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				shape-rendering="geometricPrecision"
+				class="h-3 w-3 transition-colors duration-200"
+			>
+				<path d="M20 21.5v-2.5a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2.5h16" />
+				<circle cx="12" cy="7" r="4" />
+			</svg>
+			{#if counts.connected}{total}{:else}--{/if}
+		</div>
 	</div>
-	<div class="online-count__label">
-		{#if counts.connected}
-			{label}
-		{:else}
-			connecting…
-		{/if}
+
+	<div
+		role="tooltip"
+		class="pointer-events-none absolute top-full right-0 mt-1 origin-top-right rounded-md bg-stone-900 px-2 py-1 text-[11px] font-medium whitespace-nowrap text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100"
+	>
+		Live spectator count
 	</div>
 </div>
-
-<style>
-	.online-count {
-		position: fixed;
-		top: 1rem;
-		right: 1rem;
-		background: rgba(15, 23, 42, 0.92);
-		color: #f8fafc;
-		padding: 0.75rem 1rem;
-		border-radius: 0.75rem;
-		box-shadow: 0 10px 30px rgba(15, 23, 42, 0.35);
-		min-width: 120px;
-		text-align: right;
-		font-family:
-			'Instrument Sans',
-			system-ui,
-			-apple-system,
-			BlinkMacSystemFont,
-			'Segoe UI',
-			sans-serif;
-		z-index: 999;
-		pointer-events: none;
-	}
-
-	.online-count__value {
-		font-size: 1.75rem;
-		font-weight: 600;
-		line-height: 1;
-	}
-
-	.online-count__label {
-		font-size: 0.75rem;
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		opacity: 0.8;
-		margin-top: 0.1rem;
-	}
-</style>
