@@ -58,13 +58,16 @@
 			<div class="space-y-3 px-5 py-5 text-sm text-stone-600">
 				<div class="text-base font-semibold text-stone-900">Move {isHabit ? 'habit' : 'slot'}?</div>
 				<p>
-					Are you sure you want to move
-					<span class="font-medium text-stone-900">{slotLabel || (isHabit ? 'this habit' : 'this slot')}</span>
+					<span class="font-medium text-stone-900"
+						>{slotLabel || (isHabit ? 'this habit' : 'this slot')}</span
+					>
 					from <span class="font-medium text-stone-900">{fromLabel}</span> to
 					<span class="font-medium text-stone-900">{toLabel}</span>?
 				</p>
 				{#if hasDestinationContent}
-					<div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+					<div
+						class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"
+					>
 						This will replace
 						{#if destinationLabel}
 							<span class="font-medium">"{destinationLabel}"</span>
