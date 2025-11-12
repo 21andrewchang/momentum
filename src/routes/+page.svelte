@@ -886,7 +886,6 @@
 				})
 			);
 
-			// Try prompting once right after initial load
 			maybePromptForMissing();
 			startHalfHourNotifier();
 			ensureSelectionExists();
@@ -963,12 +962,8 @@
 									<PlayerStatusTag
 										label={playerDisplays[trackedKey]?.label ?? null}
 										status={playerStatuses[trackedKey]}
+										me={person.user_id === viewerUserId}
 									/>
-								{/if}
-								{#if viewerUserId === person.user_id}
-									<span class="rounded bg-stone-200 px-2 py-0.5 text-[10px] text-stone-700"
-										>you</span
-									>
 								{/if}
 							</div>
 
