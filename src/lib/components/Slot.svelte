@@ -42,12 +42,6 @@
 	const habitKey = $derived(habitPlaceholder.toLowerCase());
 	const habitPreset = $derived(HABITS[habitKey]);
 
-	const BASE_SLOT =
-		'flex flex-row w-full items-center gap-2 rounded-md border px-2 py-1 text-xs font-medium bg-stone-50';
-	const DEFAULT_FILLED = 'border-stone-200 bg-white text-stone-900';
-	const DEFAULT_EMPTY = 'border-stone-100 bg-stone-100 text-stone-600 hover:bg-stone-200';
-	const DEFAULT_EMPTY_DISABLED = 'border-stone-100 bg-stone-100 text-stone-400';
-
 	const showTodo = $derived(todo !== null);
 	const canOpen = $derived(
 		editable &&
@@ -72,7 +66,7 @@
 </script>
 
 <button
-	class="flex w-full flex-row items-center rounded-sm bg-stone-100 p-2 transition hover:bg-stone-200 focus:border-0 focus:outline-0"
+	class={`flex w-full flex-row items-center rounded-sm bg-stone-100 p-2 transition ${editable ? 'hover:bg-stone-200' : ''} focus:border-0 focus:outline-0`}
 	class:ring-2={selected}
 	class:ring-stone-400={selected}
 	class:ring-offset-1={selected}

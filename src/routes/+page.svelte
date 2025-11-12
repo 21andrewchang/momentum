@@ -483,9 +483,6 @@
 		const s = now.getSeconds();
 		const ms = now.getMilliseconds();
 		const minsToNext = 30 - (m % 30);
-		const totalMs =
-			(minsToNext === 30 ? 0 : minsToNext) * 60_000 +
-			(minsToNext === 30 ? (30 - (m % 30)) * 60_000 : 0); // guard not needed but harmless
 		const msLeft = minsToNext * 60_000 - (s * 1_000 + ms);
 		return msLeft <= 0 ? 1_000 : msLeft;
 	}
@@ -495,8 +492,9 @@
 	}
 
 	function notifyCurrentSlot() {
-		if (!viewerUserId || !('Notification' in window) || Notification.permission !== 'granted')
+		if (!viewerUserId || !('Notification' in window) || Notification.permission !== 'granted') {
 			return;
+		}
 
 		const { hour, half } = slotInfoFromNow();
 		if (!withinWindow(hour)) return;
@@ -511,6 +509,7 @@
 		const notifTitle = `${blockLabel} • ${hourLabel}`;
 		const body = titleTxt ? `TODO: ${titleTxt}` : undefined;
 
+		console.log('clicked');
 		new Notification(notifTitle, {
 			body,
 			tag: `slot-${localToday()}-${hour}-${half}`,
@@ -634,7 +633,7 @@
 					{/each}
 				{:else}
 					{#each people as person}
-						<div class="flex w-full flex-col space-y-1">
+						<div class="flex w-full flex-col space-y-1 transition-opacity">
 							<div class="flex h-6 items-center gap-2">
 								<span>{person.label}</span>
 								{#if viewerUserId === person.user_id}
@@ -653,7 +652,10 @@
 								{/each}
 							{:else}
 								{#each hours as h, hourIndex}
-									<div class="flex h-7 w-full flex-row space-x-1">
+									<div
+										class="hover:none flex h-7 w-full flex-row space-x-1"
+										class:opacity-60={viewerUserId !== person.user_id}
+									>
 										<Slot
 											title={getTitle(person.user_id, h, 0)}
 											todo={getTodo(person.user_id, h, 0)}
