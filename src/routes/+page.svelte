@@ -58,13 +58,16 @@
 
 	function startPlayerStatusWatchers(viewerId: string | null) {
 		stopPlayerStatusWatchers();
-		if (viewerId) return;
+
 		for (const def of TRACKED_PLAYERS) {
 			const display = playerDisplays[def.key];
 			if (!display?.user_id) {
 				playerStatuses = { ...playerStatuses, [def.key]: 'offline' };
 				continue;
 			}
+			// Optional: don’t watch yourself to avoid noise
+			if (viewerId && display.user_id === viewerId) continue;
+
 			const store = watchPlayerStatus(display.user_id);
 			const unsub = store.subscribe((status) => {
 				playerStatuses = { ...playerStatuses, [def.key]: status };
@@ -953,16 +956,14 @@
 					{/each}
 				{:else}
 					{#each people as person}
+						{@const trackedKey = getTrackedPlayerKeyForUser(person.user_id)}
 						<div class="flex w-full flex-col space-y-1 transition-opacity">
 							<div class="flex h-6 items-center gap-2">
-								{#if true}
-									{@const trackedKey = getTrackedPlayerKeyForUser(person.user_id)}
-									{#if trackedKey}
-										<PlayerStatusTag
-											label={playerDisplays[trackedKey]?.label ?? null}
-											status={playerStatuses[trackedKey]}
-										/>
-									{/if}
+								{#if trackedKey}
+									<PlayerStatusTag
+										label={playerDisplays[trackedKey]?.label ?? null}
+										status={playerStatuses[trackedKey]}
+									/>
 								{/if}
 								{#if viewerUserId === person.user_id}
 									<span class="rounded bg-stone-200 px-2 py-0.5 text-[10px] text-stone-700"
