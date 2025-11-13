@@ -120,17 +120,16 @@
 		const minute = now.getMinutes();
 		if (hour < START_HOUR) return 0;
 		if (hour >= END_HOUR) return TOTAL_BLOCKS_PER_DAY;
-		const hoursSinceStart = hour - START_HOUR;
-		const base = hoursSinceStart * 2;
-		const extra = minute < 30 ? 1 : 2;
-		return Math.min(TOTAL_BLOCKS_PER_DAY, base + extra);
+		const minutesSinceStart = (hour - START_HOUR) * 60 + minute;
+		const blocksCompleted = Math.floor(minutesSinceStart / 30);
+		return Math.min(TOTAL_BLOCKS_PER_DAY, Math.max(0, blocksCompleted));
 	}
 
 	function blockIsDue(hour: number, half: number, currentHour: number, currentHalf: number) {
 		if (hour < START_HOUR) return false;
 		if (hour > currentHour) return false;
 		if (hour < currentHour) return true;
-		return half <= currentHalf;
+		return half < currentHalf;
 	}
 
 	async function refreshCurrentCombined() {
