@@ -561,8 +561,6 @@
 		}
 		if (handled) event.preventDefault();
 	}
-	$inspect('hjkl', hjklSlot);
-	$inspect('selected', selectedSlot);
 
 	async function getTodayDayIdForUser(user_id: string, createIfMissing: boolean) {
 		const today = localToday();
