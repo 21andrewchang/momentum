@@ -130,8 +130,8 @@
 		hour = (initialHour ?? fallback.hour) as number;
 		half = (initialHalf ?? fallback.half) as 0 | 1;
 		makeHabit = false;
-			mode = 'insert';
-		});
+		mode = 'insert';
+	});
 
 	function fillPreset(s: string) {
 		text = s;
@@ -140,20 +140,20 @@
 </script>
 
 {#if open}
-		<div
-			bind:this={modalEl}
-			in:fade={{ duration: 150 }}
-			class="fixed inset-0 z-[130] flex items-center justify-center bg-stone-900/30 backdrop-blur-sm"
-			role="dialog"
+	<div
+		bind:this={modalEl}
+		in:fade={{ duration: 150 }}
+		class="fixed inset-0 z-[130] flex items-center justify-center bg-stone-900/30 backdrop-blur-sm"
+		role="dialog"
 		aria-modal="true"
 		aria-label="New log"
 		tabindex="-1"
 		onclick={handleBackdropClick}
 		onkeydown={handleKeydown}
 	>
-			<div
-				in:scale={{ start: 0.95, duration: 160 }}
-				class="w-full max-w-xl rounded-xl border border-stone-200 bg-white/95 text-stone-800 shadow-[0_12px_32px_rgba(15,15,15,0.12)]"
+		<div
+			in:scale={{ start: 0.95, duration: 160 }}
+			class="w-full max-w-xl rounded-xl border border-stone-200 bg-white/95 text-stone-800 shadow-[0_12px_32px_rgba(15,15,15,0.12)]"
 		>
 			<div class="flex flex-row gap-1 p-3 pb-0 text-xs text-stone-600">
 				<select
@@ -183,16 +183,16 @@
 					</span>
 				</button>
 			</div>
-				<div class="flex w-full flex-row items-center">
-					<input
-						bind:this={inputEl}
-						type="text"
-						placeholder="Title"
-						class="w-full p-5 text-2xl text-stone-800 transition outline-none"
-						onfocus={enterInsertMode}
-						bind:value={text}
-						autocomplete="off"
-					/>
+			<div class="flex w-full flex-row items-center">
+				<input
+					bind:this={inputEl}
+					type="text"
+					placeholder="Title"
+					class="w-full p-5 text-2xl text-stone-800 transition outline-none"
+					onfocus={enterInsertMode}
+					bind:value={text}
+					autocomplete="off"
+				/>
 				{#if todo === false}
 					<div class="relative mr-5 grid h-3 w-3 rounded-full p-3">
 						<span
@@ -213,9 +213,9 @@
 				<button
 					type="button"
 					class="inline-flex items-center justify-center rounded-lg border border-stone-200 px-2 py-1 text-[10px] font-medium text-stone-900 transition"
-					onclick={() => fillPreset('Meditate')}
+					onclick={() => fillPreset('Bored')}
 				>
-					Meditate
+					Bored
 				</button>
 				<button
 					type="button"

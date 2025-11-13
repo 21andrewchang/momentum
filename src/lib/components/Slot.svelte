@@ -3,7 +3,7 @@
 
 	const HABITS: Record<string, HabitConfig> = {
 		read: { icon: '📖' },
-		meditate: { icon: '🧘' },
+		bored: { icon: '😵‍💫' },
 		gym: { icon: '🏋️' }
 	};
 
@@ -19,7 +19,7 @@
 			empty: 'bg-blue-50 text-blue-700 hover:bg-blue-100',
 			border: 'border-blue-200'
 		},
-		meditate: {
+		bored: {
 			filled: 'bg-emerald-50 text-emerald-900',
 			empty: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
 			border: 'border-emerald-200'
@@ -63,7 +63,8 @@
 			? `border-dotted ${canHover ? 'hover:border-solid' : ''} border ${theme?.border ?? 'border-stone-300'} ${
 					isFilled
 						? (theme?.filled ?? 'bg-stone-50 text-stone-900')
-						: (theme?.empty ?? 'bg-stone-50 text-stone-700') + (canHover ? ' hover:bg-stone-100' : '')
+						: (theme?.empty ?? 'bg-stone-50 text-stone-700') +
+							(canHover ? ' hover:bg-stone-100' : '')
 				}`
 			: `${isFilled ? 'bg-stone-100 text-stone-900' : 'bg-stone-100 text-stone-600 border-stone-100'} ${
 					canHover ? 'hover:bg-stone-200' : ''
