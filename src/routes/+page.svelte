@@ -848,6 +848,14 @@
 		}
 	}
 
+	function updateCurrentTime() {
+		const now = getNow();
+		currentHour = now.getHours();
+		currentMinute = now.getMinutes();
+		currentHalf = now.getMinutes() < 30 ? 0 : 1;
+		maybePromptForMissing();
+	}
+
 	const ENABLE_NOTIFS = true;
 
 	async function ensureNotifPermission() {
@@ -875,6 +883,12 @@
 		const minsToNext = 30 - (m % 30);
 		const msLeft = minsToNext * 60_000 - (s * 1_000 + ms);
 		return msLeft <= 0 ? 1_000 : msLeft;
+	}
+	function msUntilNextMinute() {
+		const now = getNow();
+		const elapsed = now.getSeconds() * 1_000 + now.getMilliseconds();
+		const remaining = 60_000 - elapsed;
+		return remaining <= 0 ? 1_000 : remaining;
 	}
 
 	function withinWindow(hour: number) {
@@ -908,6 +922,7 @@
 	}
 
 	let notifTimer: number | null = null;
+	let clockTimer: number | null = null;
 	function startHalfHourNotifier() {
 		if (!ENABLE_NOTIFS) return;
 		window.clearTimeout(notifTimer as unknown as number);
@@ -921,6 +936,18 @@
 		};
 
 		notifTimer = window.setTimeout(arm, msUntilNextBoundary());
+	}
+	function scheduleClockTick() {
+		window.clearTimeout(clockTimer as unknown as number);
+		const delay = msUntilNextMinute();
+		clockTimer = window.setTimeout(() => {
+			updateCurrentTime();
+			scheduleClockTick();
+		}, delay);
+	}
+	function stopClockTick() {
+		window.clearTimeout(clockTimer as unknown as number);
+		clockTimer = null;
 	}
 
 	async function init() {
@@ -977,20 +1004,13 @@
 	}
 
 	onMount(() => {
-		const tick = () => {
-			const now = getNow();
-			currentHour = now.getHours();
-			currentMinute = now.getMinutes();
-			currentHalf = now.getMinutes() < 30 ? 0 : 1;
-			maybePromptForMissing();
-		};
-		tick();
-		const i = setInterval(tick, 60_000);
+		updateCurrentTime();
+		scheduleClockTick();
 		init();
 		const keyHandler = (event: KeyboardEvent) => handleGlobalKeydown(event);
 		window.addEventListener('keydown', keyHandler);
 		return () => {
-			clearInterval(i);
+			stopClockTick();
 			window.removeEventListener('keydown', keyHandler);
 		};
 	});
