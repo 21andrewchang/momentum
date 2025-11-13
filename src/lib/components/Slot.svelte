@@ -59,8 +59,6 @@
 	// Build classes
 	const baseClasses =
 		'flex w-full min-w-0 flex-row items-center rounded-sm p-2 transition overflow-hidden focus:outline-0';
-	const focusRingClasses =
-		'focus-visible:ring-2 focus-visible:ring-stone-400 focus-visible:ring-offset-2 focus-visible:ring-offset-stone-50';
 	const canHover = $derived(editable);
 	const habitClasses = $derived(
 		isHabit
@@ -92,7 +90,7 @@
 </script>
 
 <button
-	class={`${baseClasses} ${focusRingClasses} ${habitClasses}`}
+	class={`${baseClasses} ${habitClasses}`}
 	class:ring-1={selected}
 	class:ring-stone-400={selected}
 	class:ring-offset-1={selected}
