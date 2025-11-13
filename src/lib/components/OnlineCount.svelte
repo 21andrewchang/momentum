@@ -93,7 +93,7 @@
 
 	<div
 		role="tooltip"
-		class="pointer-events-none absolute top-full right-0 mt-1 origin-top-right rounded-md bg-stone-900 px-2 py-1 text-[11px] font-medium whitespace-nowrap text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100"
+		class="pointer-events-none absolute top-full right-0 mt-1 origin-top-right rounded-md bg-stone-700 px-2 py-1 text-[11px] font-medium whitespace-nowrap text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100"
 	>
 		Live spectator count
 	</div>
