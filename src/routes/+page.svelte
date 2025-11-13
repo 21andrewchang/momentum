@@ -13,6 +13,8 @@
 
 	let people = $state<Person[]>([]);
 	const session = getContext<Writable<Session>>('session');
+	let isDragging = $state(false);
+	let suppressNextClick = $state(false);
 
 	const TRACKED_PLAYERS = [
 		{ key: 'andrew', fallbackLabel: 'Andrew', tokens: ['andrew', 'graves'] },
@@ -65,7 +67,6 @@
 				playerStatuses = { ...playerStatuses, [def.key]: 'offline' };
 				continue;
 			}
-			// Optional: don’t watch yourself to avoid noise
 			if (viewerId && display.user_id === viewerId) continue;
 
 			const store = watchPlayerStatus(display.user_id);
@@ -336,6 +337,7 @@
 		return dragHoverSlot ?? hoverSlot ?? selectedSlot;
 	}
 	function slotIsHighlighted(user_id: string, hourIndex: number, half: 0 | 1) {
+		if (isDragging) return false;
 		const active = highlightedSlotForUser(user_id);
 		return slotMatches(active, hourIndex, half);
 	}
@@ -373,18 +375,15 @@
 		const hour = hours[selectedSlot.hourIndex];
 		if (hour === undefined) return false;
 
-		// 1) If this slot has a todo bubble, toggle it.
 		const todoValue = getTodo(viewerUserId, hour, selectedSlot.half);
 		if (todoValue !== null) {
 			toggleTodo(viewerUserId, hour, selectedSlot.half);
 			return true;
 		}
 
-		// 2) Block opening if this slot is a habit.
 		const habitName = getHabitTitle(viewerUserId, hour, selectedSlot.half);
-		if ((habitName ?? '').trim().length > 0) return true; // handled: habits are not editable
+		if ((habitName ?? '').trim().length > 0) return true;
 
-		// 3) Only open editor if empty and not a habit.
 		const title = getTitle(viewerUserId, hour, selectedSlot.half);
 		if (title.trim().length > 0) return false;
 		openEditor(viewerUserId, hour, selectedSlot.half);
@@ -403,6 +402,22 @@
 		dragHoverSlot = null;
 		cleanupDragImage();
 	}
+
+	// pointer down: clear selection immediately before drag/focus
+	function handleSlotPointerDown(
+		event: PointerEvent,
+		user_id: string,
+		hour: number,
+		half: 0 | 1,
+		hourIndex: number
+	) {
+		if (!canDragSlot(user_id, hour, half)) return;
+
+		setSelectedSlot(null);
+		hoverSlot = null;
+		dragHoverSlot = null;
+	}
+
 	function handleSlotDragStart(
 		event: DragEvent,
 		user_id: string,
@@ -414,6 +429,9 @@
 			event.preventDefault();
 			return;
 		}
+		isDragging = true;
+		suppressNextClick = true;
+		setSelectedSlot(null);
 		draggingSlot = { user_id, hour, half };
 		dragHoverSlot = { hourIndex, half };
 		if (event.dataTransfer) {
@@ -471,6 +489,10 @@
 	}
 	function handleSlotDragEnd() {
 		resetDragState();
+		isDragging = false;
+		queueMicrotask(() => {
+			suppressNextClick = false;
+		});
 	}
 	function captureHoverSelection() {
 		if (!viewerUserId || !hoverSlot) return false;
@@ -586,7 +608,7 @@
 	}
 
 	function openEditor(user_id: string, h: number, half01: 0 | 1) {
-		if (viewerUserId !== user_id) return; // only edit your own column
+		if (viewerUserId !== user_id) return;
 		const hourIndex = getHourIndex(h);
 		if (hourIndex !== -1) {
 			setSelectedSlot({ hourIndex, half: half01 });
@@ -602,7 +624,6 @@
 		half: 0 | 1,
 		habit: boolean
 	) {
-		console.log('submitting???');
 		const { user_id } = draft;
 		if (!user_id || hour == null || half == null) return;
 		const day_id = dayIdByUser[user_id];
@@ -631,7 +652,6 @@
 			return;
 		}
 
-		// update local cache with both title and todo
 		setTitle(user_id, hour, half, text, todo);
 
 		if (habit && viewerUserId === user_id) {
@@ -658,6 +678,7 @@
 
 	async function toggleTodo(user_id: string, hour: number, half: 0 | 1) {
 		if (viewerUserId !== user_id) return;
+		if (suppressNextClick) return;
 		const day_id = dayIdByUser[user_id];
 		if (!day_id) return;
 		const slot = getSlot(user_id, hour, half);
@@ -770,7 +791,6 @@
 		return true;
 	}
 
-	// ---------- Auto-prompt if current slot empty (viewer only) ----------
 	function slotKey(u: string, date: string, h: number, half: 0 | 1) {
 		return `${u}|${date}|${h}|${half}`;
 	}
@@ -783,7 +803,7 @@
 		if (h < START_HOUR || h >= END_HOUR) return;
 
 		const key = slotKey(viewerUserId, date, h, half);
-		if (lastPromptKey === key) return; // already prompted this slot
+		if (lastPromptKey === key) return;
 
 		const t = getTitle(viewerUserId, h, half);
 		if (!t || t.trim() === '') {
@@ -836,14 +856,11 @@
 		const blockLabel = half === 0 ? 'Block A' : 'Block B';
 		const hourLabel = `${String(hour).padStart(2, '0')}:${half === 0 ? '00' : '30'}`;
 
-		// read the viewer's current slot title
 		const rawTitle = getTitle(viewerUserId, hour, half);
 		const titleTxt = (rawTitle ?? '').trim();
 
 		const notifTitle = `${blockLabel} • ${hourLabel}`;
 		const body = titleTxt ? `TODO: ${titleTxt}` : undefined;
-		console.log('title: ', notifTitle);
-		console.log('body: ', body);
 
 		new Notification(notifTitle, {
 			body,
@@ -927,7 +944,6 @@
 			currentHour = now.getHours();
 			currentMinute = now.getMinutes();
 			currentHalf = now.getMinutes() < 30 ? 0 : 1;
-			// Re-check at each minute tick (will only open once per slot)
 			maybePromptForMissing();
 		};
 		tick();
@@ -1009,12 +1025,13 @@
 											class="flex w-full min-w-0 bg-transparent"
 											role="presentation"
 											draggable={canDragSlot(person.user_id, h, 0)}
-											onpointerenter={() =>
-												handleSlotPointerEnter(person.user_id, hourIndex, 0)}
-											onpointerleave={() =>
-												handleSlotPointerLeave(person.user_id, hourIndex, 0)}
-											ondragstart={(event) =>
-												handleSlotDragStart(event, person.user_id, h, 0, hourIndex)}
+											onpointerdown={(e) =>
+												handleSlotPointerDown(e, person.user_id, h, 0, hourIndex)}
+											onpointerenter={() => handleSlotPointerEnter(person.user_id, hourIndex, 0)}
+											onpointerleave={() => handleSlotPointerLeave(person.user_id, hourIndex, 0)}
+											ondragstart={(event) => {
+												handleSlotDragStart(event, person.user_id, h, 0, hourIndex);
+											}}
 											ondragover={(event) =>
 												handleSlotDragOver(event, person.user_id, 0, hourIndex)}
 											ondrop={(event) => handleSlotDrop(event, person.user_id, h, 0)}
@@ -1035,12 +1052,13 @@
 											class="flex w-full min-w-0 bg-transparent"
 											role="presentation"
 											draggable={canDragSlot(person.user_id, h, 1)}
-											onpointerenter={() =>
-												handleSlotPointerEnter(person.user_id, hourIndex, 1)}
-											onpointerleave={() =>
-												handleSlotPointerLeave(person.user_id, hourIndex, 1)}
-											ondragstart={(event) =>
-												handleSlotDragStart(event, person.user_id, h, 1, hourIndex)}
+											onpointerdown={(e) =>
+												handleSlotPointerDown(e, person.user_id, h, 1, hourIndex)}
+											onpointerenter={() => handleSlotPointerEnter(person.user_id, hourIndex, 1)}
+											onpointerleave={() => handleSlotPointerLeave(person.user_id, hourIndex, 1)}
+											ondragstart={(event) => {
+												handleSlotDragStart(event, person.user_id, h, 1, hourIndex);
+											}}
 											ondragover={(event) =>
 												handleSlotDragOver(event, person.user_id, 1, hourIndex)}
 											ondrop={(event) => handleSlotDrop(event, person.user_id, h, 1)}

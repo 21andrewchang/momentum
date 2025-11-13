@@ -138,10 +138,3 @@
 		</div>
 	{/if}
 </button>
-
-<style>
-	button.current-slot {
-		background-image: linear-gradient(rgba(15, 23, 42, 0.12), rgba(15, 23, 42, 0.12));
-		background-blend-mode: multiply;
-	}
-</style>
