@@ -507,6 +507,8 @@
 	function handleSlotPointerEnter(user_id: string, hourIndex: number, half: 0 | 1) {
 		if (!viewerUserId || viewerUserId !== user_id) return;
 		hoverSlot = { hourIndex, half };
+		if (draggingSlot) return;
+		setSelectedSlot({ hourIndex, half });
 	}
 	function handleSlotPointerLeave(user_id: string, hourIndex: number, half: 0 | 1) {
 		if (!viewerUserId || viewerUserId !== user_id) return;
