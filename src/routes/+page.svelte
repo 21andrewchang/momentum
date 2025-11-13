@@ -5,6 +5,7 @@
 	import Slot from '$lib/components/Slot.svelte';
 	import { watchPlayerStatus, trackPlayerPresence, type PlayerStatus } from '$lib/playerPresence';
 	import { calculateStreak, type DayCompletionSummary, type PlayerStreak } from '$lib/streaks';
+	import { TRACKED_PLAYERS, type TrackedPlayerKey } from '$lib/trackedPlayers';
 	import { getContext, onDestroy, onMount } from 'svelte';
 	import { supabase } from '$lib/supabaseClient';
 	import type { Writable } from 'svelte/store';
@@ -17,12 +18,7 @@
 	let isDragging = $state(false);
 	let suppressNextClick = $state(false);
 
-	const TRACKED_PLAYERS = [
-		{ key: 'andrew', fallbackLabel: 'Andrew', tokens: ['andrew', 'graves'] },
-		{ key: 'nico', fallbackLabel: 'Nico', tokens: ['nico', 'cho'] }
-	] as const;
-
-	type PlayerKey = (typeof TRACKED_PLAYERS)[number]['key'];
+	type PlayerKey = TrackedPlayerKey;
 	type PlayerDisplay = { label: string; user_id: string | null };
 
 	let playerDisplays = $state<Record<PlayerKey, PlayerDisplay>>({
@@ -100,7 +96,7 @@
 	const START_HOUR = 8;
 	const END_HOUR = 24;
 	const hours = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
-	const TOTAL_BLOCKS_PER_DAY = hours.length * 2;
+	const TOTAL_BLOCKS_PER_DAY = hours.length * 2; // 16 hours * 2 halves = 32 slots
 	const STREAK_LOOKBACK_DAYS = 60;
 	const loadingPlaceholderColumns = Array.from({ length: 2 });
 	const hh = (n: number) => n.toString().padStart(2, '0');
@@ -200,7 +196,8 @@
 	const formatDateString = (date: Date) =>
 		`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 	const dateStringNDaysAgo = (days: number) => {
-		const d = getNow();
+		const base = getNow();
+		const d = new Date(base);
 		d.setDate(d.getDate() - days);
 		return formatDateString(d);
 	};
@@ -954,19 +951,19 @@
 			startPlayerStatusWatchers(viewerUserId);
 			startLocalPlayerPresenceIfTracked(viewerUserId);
 
-			const perUserLoads = people.map(async ({ user_id }) => {
-				const create = viewerUserId === user_id;
-				const dayId = await getTodayDayIdForUser(user_id, create);
-				dayIdByUser[user_id] = dayId;
-				const tasks: Promise<void>[] = [loadHabitsForUser(user_id)];
+				const perUserLoads = people.map(async ({ user_id }) => {
+					const create = viewerUserId === user_id;
+					const dayId = await getTodayDayIdForUser(user_id, create);
+					dayIdByUser[user_id] = dayId;
+					const tasks: Promise<void>[] = [loadHabitsForUser(user_id)];
 				if (dayId) tasks.push(loadHoursForDay(user_id, dayId));
 				await Promise.all(tasks);
 				if (dayId) await ensureHabitHoursForDay(user_id, dayId);
 			});
 
-			const historyLoads = people.map(({ user_id }) => loadPlayerHistoryForUser(user_id));
+				const historyLoads = people.map(({ user_id }) => loadPlayerHistoryForUser(user_id));
 
-			await Promise.all([...perUserLoads, ...historyLoads]);
+				await Promise.all([...perUserLoads, ...historyLoads]);
 
 			maybePromptForMissing();
 			startHalfHourNotifier();
