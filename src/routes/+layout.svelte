@@ -3,6 +3,7 @@
 	import '../app.css';
 	import OnlineCount from '$lib/components/OnlineCount.svelte';
 	import { writable, type Writable } from 'svelte/store';
+    import { page } from '$app/stores';
 	import { supabase } from '$lib/supabaseClient';
 	import favicon from '$lib/assets/favicon.svg';
 	import type { Session } from '$lib/session';
@@ -12,6 +13,17 @@
 	type Person = { label: string; user_id: string };
 	type PlayerDisplay = { label: string; user_id: string | null };
 	type HistoryRow = { date: string; values: Record<TrackedPlayerKey, number | null> };
+
+    const links = [
+		{ href: '/manifesto', label: 'Manifesto' },
+		{ href: '/fundamentals', label: 'Fundamentals' },
+		{ href: '/collection', label: 'Collection' }
+	];
+
+    const isActive = (href: string, pathname: string) => {
+		if (href === '/') return pathname === '/';
+		return pathname === href || pathname.startsWith(href + '/');
+	};
 
 	const START_HOUR = 8;
 	const END_HOUR = 24;
@@ -399,17 +411,24 @@
 		</div>
 	</div>
 {:else}
-    <nav class="fixed top-5 left-0 w-full flex justify-center justify-center">
-        <div class="flex gap-6 text-xs text-stone-500">
-            <a href="/manifesto" class="hover:text-stone-800 transition-colors duration-200 ease-out">
-                Manifesto
-            </a>
-            <a href="/fundamentals" class="hover:text-stone-800 transition-colors duration-200 ease-out">
-                Fundamentals
-            </a>
-            <a href="/collection" class="hover:text-stone-800 transition-colors duration-200 ease-out">
-                Collection
-            </a>
+    <nav class="fixed top-5 left-0 w-full flex justify-center items-center">
+        <a href="/" style="font-family: 'Cormorant Garamond', serif"class="absolute left-6 text-xl tracking-wide text-stone-700">
+            founder zoo.
+        </a>
+
+        <div class="flex gap-6 text-xs text-stone-400">
+            {#each links as link}
+                <a 
+                    href={link.href} 
+                    class={`transition-colors duration-200 ease-out ${
+                        isActive(link.href, $page.url.pathname)
+                            ? 'text-stone-800'
+                            : 'text-stone-400 hover:text-stone-800'
+                    }`}
+                >
+                    {link.label}
+                </a>
+            {/each}
         </div>
     </nav>
 {/if}
