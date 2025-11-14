@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount, setContext } from 'svelte';
 	import '../app.css';
-	import OnlineCount from '$lib/components/OnlineCount.svelte';
 	import { writable, type Writable } from 'svelte/store';
 	import { page } from '$app/stores';
 	import { supabase } from '$lib/supabaseClient';
@@ -456,7 +455,6 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-<OnlineCount dedupe={true} />
 {#if $session.user}
 	<div
 		class="pointer-events-none fixed top-4 left-3 z-50 flex flex-col items-start"

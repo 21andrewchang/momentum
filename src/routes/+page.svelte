@@ -11,6 +11,7 @@
 	import type { Writable } from 'svelte/store';
 	import type { Session } from '$lib/session';
 	import { formatLocalTimestamp } from '$lib/time';
+	import OnlineCount from '$lib/components/OnlineCount.svelte';
 
 	type Person = { label: string; user_id: string };
 
@@ -1358,6 +1359,7 @@
 	});
 </script>
 
+<OnlineCount dedupe={true} />
 <div class="flex h-dvh w-full flex-col justify-center overflow-clip bg-stone-50 p-10 pt-20">
 	<div class="flex flex-row space-x-4">
 		<div class="flex flex-col space-y-1">
