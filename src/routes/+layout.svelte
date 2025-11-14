@@ -1,7 +1,10 @@
 <script lang="ts">
+	import OnlineCount from '$lib/components/OnlineCount.svelte';
 	import { onMount, setContext } from 'svelte';
+	import { fly, blur } from 'svelte/transition';
 	import '../app.css';
 	import { writable, type Writable } from 'svelte/store';
+	import { browser } from '$app/environment';
 	import { page } from '$app/stores';
 	import { supabase } from '$lib/supabaseClient';
 	import favicon from '$lib/assets/favicon.svg';
@@ -9,6 +12,7 @@
 	import type { User } from '@supabase/supabase-js';
 	import { TRACKED_PLAYERS, type TrackedPlayerKey } from '$lib/trackedPlayers';
 	import { formatLocalTimestamp } from '$lib/time';
+	import { usePresence, type PresenceSnapshot } from '$lib/presence';
 
 	type Person = { label: string; user_id: string };
 	type Goal = { title: string; due_date: string };
@@ -32,8 +36,15 @@
 	const HISTORY_LOOKBACK_DAYS = 30;
 	const CURRENT_PROGRESS_POLL_MS = 60_000;
 
+	// session + auth context
 	const session: Writable<Session> = writable({ user: null, name: '', loading: true });
 	setContext('session', session);
+
+	const authSetStore: Writable<boolean | null> = writable(null);
+	setContext('authSet', authSetStore);
+
+	let authSet = $state<boolean | null>(null);
+	let viewerId = $state<string | null>(null);
 
 	const applyUser = (u: User | null) => {
 		session.set({
@@ -49,6 +60,7 @@
 		}
 	};
 
+	// tracked players, history, goals, etc.
 	let trackedDisplays = $state<Record<TrackedPlayerKey, PlayerDisplay>>({
 		andrew: { label: 'Andrew', user_id: null },
 		nico: { label: 'Nico', user_id: null }
@@ -62,10 +74,11 @@
 	let newGoalTitle = $state('');
 	let newGoalDueDate = $state('');
 	let isCreatingGoal = $state(false);
-	let viewerId = $state<string | null>(null);
 
 	const formatDateString = (date: Date) =>
-		`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+		`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+			date.getDate()
+		).padStart(2, '0')}`;
 	const localToday = () => formatDateString(new Date());
 	const dateStringNDaysAgo = (days: number) => {
 		const d = new Date();
@@ -278,6 +291,7 @@
 				if (!key) continue;
 				if (!blockIsDue(hour, half, currentHour, currentHalf)) continue;
 				const trimmed = title.trim();
+				// todo === false means explicitly incomplete
 				const isComplete = todo === false ? false : trimmed.length > 0 || todo === true;
 				if (!isComplete) continue;
 				filledCounts[key] += 1;
@@ -398,9 +412,47 @@
 		}
 	}
 
+	// pathname + presence lifted to layout
+	let pathname = $state('/');
+	let presenceCounts = $state<PresenceSnapshot>({ tabs: 0, unique: 0, connected: false });
+
+	$effect(() => {
+		const unsubscribe = page.subscribe(($page) => {
+			pathname = $page.url.pathname;
+		});
+		return () => {
+			unsubscribe();
+		};
+	});
+
+	$effect(() => {
+		if (!browser) {
+			presenceCounts = { tabs: 0, unique: 0, connected: false };
+			return;
+		}
+
+		const resolvedRoom = pathname || '/';
+
+		if (!resolvedRoom) {
+			presenceCounts = { tabs: 0, unique: 0, connected: false };
+			return;
+		}
+
+		const store = usePresence(resolvedRoom, viewerId);
+		const unsubscribe = store.subscribe((value) => {
+			console.log('adskfj');
+			presenceCounts = value;
+		});
+
+		return () => {
+			unsubscribe();
+		};
+	});
+
 	onMount(() => {
 		let mounted = true;
 		let currentProgressInterval: number | null = null;
+
 		const init = async () => {
 			let authUser: User | null = null;
 			try {
@@ -408,16 +460,22 @@
 				if (!mounted) return;
 				authUser = data.user ?? null;
 				applyUser(authUser);
+				authSet = authUser ? true : false;
+				authSetStore.set(authSet);
 			} catch {
 				if (!mounted) return;
 				applyUser(null);
+				authSet = false;
+				authSetStore.set(authSet);
 				authUser = null;
 			}
 			if (!mounted) return;
 			await loadActiveGoal(authUser?.id ?? null);
 			await refreshTrackedPlayers();
 		};
+
 		void init();
+
 		currentProgressInterval = window.setInterval(() => {
 			void refreshCurrentCombined();
 		}, CURRENT_PROGRESS_POLL_MS);
@@ -448,103 +506,115 @@
 	});
 
 	let { children } = $props();
+	$inspect('auth set', authSet);
+	$inspect('session user', $session.user);
+	$inspect('presence', presenceCounts);
 </script>
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-{#if $session.user}
-	<div
-		class="pointer-events-none fixed top-4 left-3 z-50 flex flex-col items-start"
-		bind:this={dateMenuEl}
-	>
-		<div class="pointer-events-auto relative">
-			<button
-				type="button"
-				class="flex w-23 items-center justify-center gap-2 rounded-sm px-1 text-xs text-stone-700 transition hover:bg-stone-200/50"
-				onclick={() => {
-					dayHistoryOpen = !dayHistoryOpen;
-				}}
-				aria-expanded={dayHistoryOpen}
+{#if authSet == null}
+	<div></div>
+{:else if !authSet && presenceCounts.connected}
+	<div in:fly={{ y: 2, duration: 400 }}>
+		<OnlineCount dedupe={true} counts={presenceCounts} />
+		<nav class="fixed top-5 left-0 flex w-full items-center justify-center">
+			<a
+				href="/"
+				style="font-family: 'Cormorant Garamond', serif"
+				class="absolute left-5 text-xl tracking-wide text-stone-700"
 			>
-				<span>{todayLabel}</span>
-				<div class="w-9 text-end text-xs font-semibold text-stone-800">
-					{currentCombinedPct != null ? `${currentCombinedPct}%` : '—%'}
-				</div>
-			</button>
-			{#if dayHistoryOpen}
-				<div
-					class="absolute top-full left-0 z-50 rounded-sm bg-stone-50 text-xs text-stone-700"
-					role="dialog"
-					aria-label="Previous days completion"
-				>
-					{#if dayHistoryRows.length === 0}
-						<div class="text-sm text-stone-500">No recent history yet.</div>
-					{:else}
-						<div class="flex flex-col gap-2 overflow-y-auto">
-							{#each dayHistoryRows as row}
-								{@const jointPct = combinedPercent(row.values)}
-								<div
-									class="flex w-23 items-center justify-center gap-2 rounded-sm text-xs text-stone-700 transition hover:bg-stone-200/50"
-								>
-									<span>
-										{formatDisplayDate(row.date, {
-											month: 'short',
-											day: 'numeric'
-										})}
-									</span>
-									<div class="w-9 text-end text-xs font-semibold text-stone-800">
-										{jointPct ?? '—'}%
-									</div>
-								</div>
-							{/each}
-						</div>
-					{/if}
-				</div>
-			{/if}
-		</div>
+				founder zoo.
+			</a>
+
+			<div class="flex gap-6 text-xs text-stone-400">
+				{#each links as link}
+					<a
+						href={link.href}
+						class={`transition-colors duration-200 ease-out ${
+							isActive(link.href, $page.url.pathname)
+								? 'text-stone-800'
+								: 'text-stone-400 hover:text-stone-800'
+						}`}
+					>
+						{link.label}
+					</a>
+				{/each}
+			</div>
+		</nav>
 	</div>
-	{#if activeGoal}
-		{@const daysRemaining = daysUntilDue(activeGoal.due_date)}
-		{@const dueLabel = formatDaysUntilText(daysRemaining)}
-		<div class="pointer-events-none fixed top-4 left-1/2 z-40 -translate-x-1/2">
-			<div
-				class="pointer-events-auto flex items-center gap-2 text-sm font-semibold tracking-wide text-stone-800 uppercase"
-			>
-				<span>{activeGoal.title || 'Goal'}</span>
-				{#if dueLabel}
-					<span class="text-xs font-semibold tracking-wide text-stone-500">
-						{dueLabel}
-					</span>
+{:else if authSet && $session.user && currentCombinedPct && presenceCounts.connected}
+	<div in:fly={{ y: 2, duration: 400, delay: 100 }}>
+		<OnlineCount dedupe={true} counts={presenceCounts} />
+		<div
+			class="pointer-events-none fixed top-5 left-4 z-50 flex flex-col items-start"
+			bind:this={dateMenuEl}
+		>
+			<div class="pointer-events-auto relative">
+				<button
+					type="button"
+					class="flex w-23 items-center justify-center gap-2 rounded-sm px-1 text-xs text-stone-700 transition hover:bg-stone-200/50"
+					onclick={() => {
+						dayHistoryOpen = !dayHistoryOpen;
+					}}
+					aria-expanded={dayHistoryOpen}
+				>
+					<span>{todayLabel}</span>
+					<div class="w-9 text-end text-xs font-semibold text-stone-800">
+						{currentCombinedPct != null ? `${currentCombinedPct}%` : '—%'}
+					</div>
+				</button>
+				{#if dayHistoryOpen}
+					<div
+						class="absolute top-full left-0 z-50 rounded-sm bg-stone-50 text-xs text-stone-700"
+						role="dialog"
+						aria-label="Previous days completion"
+					>
+						{#if dayHistoryRows.length === 0}
+							<div class="text-sm text-stone-500">No recent history yet.</div>
+						{:else}
+							<div class="flex flex-col overflow-y-auto">
+								{#each dayHistoryRows as row}
+									{@const jointPct = combinedPercent(row.values)}
+									<div
+										class="flex w-23 items-center justify-center gap-2 rounded-sm text-xs text-stone-700 transition hover:bg-stone-200/50"
+									>
+										<span>
+											{formatDisplayDate(row.date, {
+												month: 'short',
+												day: 'numeric'
+											})}
+										</span>
+										<div class="w-9 text-end text-xs font-semibold text-stone-800">
+											{jointPct ?? '—'}%
+										</div>
+									</div>
+								{/each}
+							</div>
+						{/if}
+					</div>
 				{/if}
 			</div>
 		</div>
-	{/if}
-{:else}
-	<nav class="fixed top-5 left-0 flex w-full items-center justify-center">
-		<a
-			href="/"
-			style="font-family: 'Cormorant Garamond', serif"
-			class="absolute left-6 text-xl tracking-wide text-stone-700"
-		>
-			founder zoo.
-		</a>
-
-		<div class="flex gap-6 text-xs text-stone-400">
-			{#each links as link}
-				<a
-					href={link.href}
-					class={`transition-colors duration-200 ease-out ${
-						isActive(link.href, $page.url.pathname)
-							? 'text-stone-800'
-							: 'text-stone-400 hover:text-stone-800'
-					}`}
+		{#if activeGoal}
+			{@const daysRemaining = daysUntilDue(activeGoal.due_date)}
+			{@const dueLabel = formatDaysUntilText(daysRemaining)}
+			<div class="pointer-events-none fixed top-5 left-1/2 z-40 -translate-x-1/2">
+				<div
+					class="pointer-events-auto flex items-center gap-2 text-sm font-semibold tracking-wide text-stone-800 uppercase"
 				>
-					{link.label}
-				</a>
-			{/each}
-		</div>
-	</nav>
+					<span>{activeGoal.title || 'Goal'}</span>
+					{#if dueLabel}
+						<span class="text-xs font-semibold tracking-wide text-stone-500">
+							{dueLabel}
+						</span>
+					{/if}
+				</div>
+			</div>
+		{/if}
+	</div>
 {/if}
+
 {@render children()}

@@ -3,6 +3,7 @@
 	import LogModal from '$lib/components/LogModal.svelte';
 	import PlayerStatusTag from '$lib/components/PlayerStatusTag.svelte';
 	import Slot from '$lib/components/Slot.svelte';
+	import { scale, fly } from 'svelte/transition';
 	import { watchPlayerStatus, trackPlayerPresence, type PlayerStatus } from '$lib/playerPresence';
 	import { calculateStreak, type DayCompletionSummary, type PlayerStreak } from '$lib/streaks';
 	import { TRACKED_PLAYERS, type TrackedPlayerKey } from '$lib/trackedPlayers';
@@ -11,7 +12,6 @@
 	import type { Writable } from 'svelte/store';
 	import type { Session } from '$lib/session';
 	import { formatLocalTimestamp } from '$lib/time';
-	import OnlineCount from '$lib/components/OnlineCount.svelte';
 
 	type Person = { label: string; user_id: string };
 
@@ -35,6 +35,7 @@
 
 	let playerStatusUnsubscribers: (() => void)[] = [];
 	let stopLocalPlayerPresence: (() => void) | null = null;
+	let showTimes = $state(false);
 
 	function updateTrackedPlayersFromPeople(list: Person[]) {
 		const next = {} as Record<PlayerKey, PlayerDisplay>;
@@ -415,6 +416,7 @@
 	function getHourIndex(value: number) {
 		return hours.findIndex((hour) => hour === value);
 	}
+
 	function clampHourIndex(idx: number) {
 		return Math.max(0, Math.min(hours.length - 1, idx));
 	}
@@ -1353,6 +1355,7 @@
 		init();
 		const keyHandler = (event: KeyboardEvent) => handleGlobalKeydown(event);
 		window.addEventListener('keydown', keyHandler);
+		requestAnimationFrame(() => (showTimes = true));
 		return () => {
 			stopClockTick();
 			window.removeEventListener('keydown', keyHandler);
@@ -1365,21 +1368,43 @@
 	});
 </script>
 
-<OnlineCount dedupe={true} />
 <div class="flex h-dvh w-full flex-col justify-center overflow-clip bg-stone-50 p-10 pt-20">
 	<div class="flex flex-row space-x-4">
-		<div class="flex flex-col space-y-1">
-			<div class="text-stone-50">T</div>
-			{#each hours as h}
-				<div
-					class="flex h-7 items-center justify-center rounded px-1 text-stone-300"
-					class:bg-stone-700={isCurrent(h)}
-					class:text-white={isCurrent(h)}
-				>
-					{hh(h)}
-				</div>
-			{/each}
-		</div>
+		{#if isLoading}
+			<div class="flex flex-col space-y-1">
+				<div class="text-stone-50">T</div>
+				{#each hours as h, i}
+					<div class="relative flex h-7 w-7 items-center justify-center">
+						<div
+							class="z-20 flex h-7 items-center justify-center rounded px-1 text-stone-300"
+							in:fly|global={{ x: 8, duration: 400, delay: 40 * i + 800 }}
+						></div>
+					</div>
+				{/each}
+			</div>
+		{:else}
+			<div class="flex flex-col space-y-1">
+				<div class="text-stone-50">T</div>
+				{#each hours as h, i}
+					<div class="relative flex h-7 w-7 items-center justify-center">
+						{#if showTimes}
+							<div
+								class="z-20 flex h-7 items-center justify-center rounded px-1 text-stone-300"
+								in:fly|global={{ x: 8, duration: 400, delay: 40 * i + 800 }}
+							>
+								{hh(h)}
+							</div>
+						{/if}
+						{#if isCurrent(h)}
+							<div
+								class="absolute h-7 w-7 rounded-md bg-stone-700"
+								in:scale={{ start: 0.7, duration: 200, delay: 1500 }}
+							></div>
+						{/if}
+					</div>
+				{/each}
+			</div>
+		{/if}
 
 		<div class="flex w-full flex-col">
 			<div class="flex w-full flex-row gap-4">
