@@ -10,7 +10,7 @@
 	import { supabase } from '$lib/supabaseClient';
 	import type { Writable } from 'svelte/store';
 	import type { Session } from '$lib/session';
-
+    import OnlineCount from '$lib/components/OnlineCount.svelte';
 	type Person = { label: string; user_id: string };
 
 	let people = $state<Person[]>([]);
@@ -1021,6 +1021,7 @@
 	});
 </script>
 
+<OnlineCount dedupe={false} />
 <div class="flex h-dvh w-full flex-col justify-center overflow-clip bg-stone-50 p-10">
 	<div class="flex flex-row space-x-4">
 		<div class="flex flex-col space-y-1">

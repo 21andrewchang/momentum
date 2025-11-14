@@ -344,7 +344,6 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-<OnlineCount dedupe={false} />
 {#if $session.user}
 	<div
 		class="pointer-events-none fixed top-3 left-3 z-50 flex flex-col items-start"
@@ -399,5 +398,19 @@
 			MVP Launch
 		</div>
 	</div>
+{:else}
+    <nav class="fixed top-5 left-0 w-full flex justify-center justify-center">
+        <div class="flex gap-6 text-xs text-stone-500">
+            <a href="/manifesto" class="hover:text-stone-800 transition-colors duration-200 ease-out">
+                Manifesto
+            </a>
+            <a href="/fundamentals" class="hover:text-stone-800 transition-colors duration-200 ease-out">
+                Fundamentals
+            </a>
+            <a href="/collection" class="hover:text-stone-800 transition-colors duration-200 ease-out">
+                Collection
+            </a>
+        </div>
+    </nav>
 {/if}
 {@render children()}
