@@ -165,14 +165,12 @@
 		half: 0 | 1 | null;
 		title: string;
 		todo: boolean | null;
-		makeHabit: boolean;
 	}>({
 		user_id: null,
 		hour: null,
 		half: null,
 		title: '',
-		todo: null,
-		makeHabit: false
+		todo: null
 	});
 	let selectedSlot = $state<SelectedSlot | null>(null);
 	let hjklSlot = $state<SelectedSlot | null>(null);
@@ -235,22 +233,27 @@
 			if (todo !== undefined) row.second.todo = todo;
 		}
 	}
+
 	function setTodo(user_id: string, h: number, half01: 0 | 1, value: boolean | null) {
 		const row = ensureSlotRow(user_id, h);
 		if (half01 === 0) row.first.todo = value;
 		else row.second.todo = value;
 	}
+
 	function getSlot(user_id: string, h: number, half01: 0 | 1): SlotValue {
 		const row = slotsByUser[user_id]?.[h];
 		if (!row) return createEmptySlot();
 		return half01 === 0 ? row.first : row.second;
 	}
+
 	function getTitle(user_id: string, h: number, half01: 0 | 1) {
 		return getSlot(user_id, h, half01).title ?? '';
 	}
+
 	function getTodo(user_id: string, h: number, half01: 0 | 1) {
 		return getSlot(user_id, h, half01).todo ?? null;
 	}
+
 	function ensureHabitRow(user_id: string, h: number): HabitSlotRow {
 		habitsByUser[user_id] ??= {};
 		habitsByUser[user_id][h] ??= { first: null, second: null };
@@ -359,15 +362,6 @@
 	function slotIsCurrent(hour: number, half: 0 | 1) {
 		return currentHour === hour && currentHalf === half;
 	}
-	function slotIsPast(hour: number, half: 0 | 1) {
-		if (currentHour < 0) return false;
-		if (hour < currentHour) return true;
-		if (hour > currentHour) return false;
-		return half < currentHalf;
-	}
-	function slotAllowsEditing(hour: number, half: 0 | 1) {
-		return !slotIsPast(hour, half);
-	}
 	function isTypingTarget(target: EventTarget | null) {
 		if (!(target instanceof HTMLElement)) return false;
 		const tag = target.tagName;
@@ -387,6 +381,7 @@
 		setSelectedSlot({ hourIndex: selectedSlot.hourIndex, half: 1 });
 		return true;
 	}
+
 	function moveSelectionVertical(delta: 1 | -1) {
 		if (!viewerUserId || !selectedSlot) return false;
 		const nextIndex = selectedSlot.hourIndex + delta;
@@ -394,12 +389,11 @@
 		setSelectedSlot({ hourIndex: nextIndex, half: selectedSlot.half });
 		return true;
 	}
+
 	function activateSelectedSlotFromKeyboard() {
 		if (!viewerUserId || !selectedSlot) return false;
 		const hour = hours[selectedSlot.hourIndex];
 		if (hour === undefined) return false;
-		if (!slotAllowsEditing(hour, selectedSlot.half)) return false;
-
 		const todoValue = getTodo(viewerUserId, hour, selectedSlot.half);
 		if (todoValue !== null) {
 			toggleTodo(viewerUserId, hour, selectedSlot.half);
@@ -418,7 +412,6 @@
 		if (!viewerUserId || !selectedSlot) return false;
 		const hour = hours[selectedSlot.hourIndex];
 		if (hour === undefined) return false;
-		if (!slotAllowsEditing(hour, selectedSlot.half)) return false;
 		const habitName = getHabitTitle(viewerUserId, hour, selectedSlot.half);
 		if ((habitName ?? '').trim().length > 0) return false;
 		openEditor(viewerUserId, hour, selectedSlot.half);
@@ -685,7 +678,6 @@
 
 	function openEditor(user_id: string, h: number, half01: 0 | 1) {
 		if (viewerUserId !== user_id) return;
-		if (!slotAllowsEditing(h, half01)) return;
 		const hourIndex = getHourIndex(h);
 		if (hourIndex !== -1) {
 			setSelectedSlot({ hourIndex, half: half01 });
@@ -696,19 +688,12 @@
 			hour: h,
 			half: half01,
 			title: slot.title ?? '',
-			todo: slot.todo ?? null,
-			makeHabit: false
+			todo: slot.todo ?? null
 		};
 		logOpen = true;
 	}
 
-	async function saveLog(
-		text: string,
-		todo: boolean | null,
-		hour: number,
-		half: 0 | 1,
-		habit: boolean
-	) {
+	async function saveLog(text: string, todo: boolean | null, hour: number, half: 0 | 1) {
 		const { user_id } = draft;
 		if (!user_id || hour == null || half == null) return;
 		const day_id = dayIdByUser[user_id];
@@ -720,7 +705,6 @@
 			half: boolean;
 			title: string;
 			todo: boolean | null;
-			habit?: boolean;
 		} = {
 			day_id,
 			hour,
@@ -739,25 +723,6 @@
 
 		setTitle(user_id, hour, half, text, todo);
 
-		if (habit && viewerUserId === user_id) {
-			const { error: habitErr } = await supabase.from('habits').upsert(
-				{
-					user_id,
-					name: text,
-					hour: hour,
-					half: half === 1
-				},
-				{ onConflict: 'user_id,hour,half' }
-			);
-			if (habitErr) {
-				console.error('habit save error', habitErr);
-			} else {
-				setHabitTitle(user_id, hour, half, text);
-			}
-
-			await insertHabitHours(user_id, day_id, [{ hour: hour, half: half, name: text }]);
-		}
-
 		logOpen = false;
 	}
 
@@ -766,7 +731,6 @@
 		if (suppressNextClick) return;
 		const day_id = dayIdByUser[user_id];
 		if (!day_id) return;
-		if (!slotAllowsEditing(hour, half)) return;
 		const slot = getSlot(user_id, hour, half);
 		if (slot.todo === null) return;
 		const nextTodo = !slot.todo;
@@ -1146,12 +1110,11 @@
 											ondrop={(event) => handleSlotDrop(event, person.user_id, h, 0)}
 											ondragend={handleSlotDragEnd}
 										>
-											<Slot
-												title={getTitle(person.user_id, h, 0)}
-												todo={getTodo(person.user_id, h, 0)}
-												editable={viewerUserId === person.user_id}
-												canEditSlot={slotAllowsEditing(h, 0)}
-												onSelect={() => openEditor(person.user_id, h, 0)}
+								<Slot
+									title={getTitle(person.user_id, h, 0)}
+									todo={getTodo(person.user_id, h, 0)}
+									editable={viewerUserId === person.user_id}
+									onSelect={() => openEditor(person.user_id, h, 0)}
 												onToggleTodo={() => toggleTodo(person.user_id, h, 0)}
 												habit={getHabitTitle(person.user_id, h, 0)}
 												selected={slotIsHighlighted(person.user_id, hourIndex, 0)}
@@ -1174,11 +1137,10 @@
 											ondrop={(event) => handleSlotDrop(event, person.user_id, h, 1)}
 											ondragend={handleSlotDragEnd}
 										>
-											<Slot
-												title={getTitle(person.user_id, h, 1)}
-												todo={getTodo(person.user_id, h, 1)}
-												editable={viewerUserId === person.user_id}
-												canEditSlot={slotAllowsEditing(h, 1)}
+								<Slot
+									title={getTitle(person.user_id, h, 1)}
+									todo={getTodo(person.user_id, h, 1)}
+									editable={viewerUserId === person.user_id}
 												onSelect={() => openEditor(person.user_id, h, 1)}
 												onToggleTodo={() => toggleTodo(person.user_id, h, 1)}
 												habit={getHabitTitle(person.user_id, h, 1)}
@@ -1220,7 +1182,6 @@
 	initialHalf={draft.half}
 	initialTitle={draft.title}
 	initialTodo={draft.todo}
-	initialHabit={draft.makeHabit}
 />
 
 <ConfirmMoveModal

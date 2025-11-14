@@ -2,7 +2,7 @@
 	import { fade, fly, scale } from 'svelte/transition';
 
 	const START = 8;
-	const END = 23; // inclusive
+	const END = 23;
 	const HOURS = Array.from({ length: END - START + 1 }, (_, i) => START + i);
 	const hh = (n: number) => n.toString().padStart(2, '0');
 
@@ -13,33 +13,37 @@
 		initialHour = null,
 		initialHalf = null,
 		initialTitle = '',
-		initialTodo = null,
-		initialHabit = false
+		initialTodo = null
 	} = $props<{
 		open?: boolean;
 		onClose?: () => void;
-		onSave?: (
-			text: string,
-			todo: boolean | null,
-			hour: number,
-			half: 0 | 1,
-			habit: boolean
-		) => void;
+		onSave?: (text: string, todo: boolean | null, hour: number, half: 0 | 1) => void;
 		initialHour?: number | null;
 		initialHalf?: 0 | 1 | null;
 		initialTitle?: string | null;
 		initialTodo?: boolean | null;
-		initialHabit?: boolean;
 	}>();
 
 	type ModalMode = 'insert' | 'normal';
+
+	type HabitPreset = {
+		label: string;
+		value: string;
+		colorClass: string;
+		key: string;
+	};
+
+	const PRESETS: HabitPreset[] = [
+		{ label: 'Read', value: 'Read', colorClass: 'bg-blue-500', key: '1' },
+		{ label: 'Bored', value: 'Bored', colorClass: 'bg-emerald-500', key: '2' },
+		{ label: 'Gym', value: 'Gym', colorClass: 'bg-red-500', key: '3' }
+	];
 
 	let text = $state('');
 	let todo = $state<boolean | null>(null);
 	let saving = $state(false);
 	let inputEl: HTMLInputElement | null = $state(null);
 	let modalEl: HTMLDivElement | null = $state(null);
-	let makeHabit = $state(initialHabit);
 	let hour = $state<number>((initialHour ?? currentSlot().hour) as number);
 	let half = $state<0 | 1>((initialHalf ?? currentSlot().half) as 0 | 1);
 	let mode = $state<ModalMode>('insert');
@@ -47,13 +51,16 @@
 	function focusInputSoon() {
 		queueMicrotask(() => inputEl?.focus());
 	}
+
 	function focusModalSoon() {
 		queueMicrotask(() => modalEl?.focus());
 	}
+
 	function enterInsertMode() {
 		mode = 'insert';
 		focusInputSoon();
 	}
+
 	function enterNormalMode() {
 		mode = 'normal';
 		inputEl?.blur();
@@ -63,8 +70,10 @@
 	function handleBackdropClick(e: MouseEvent) {
 		if (e.target === e.currentTarget) onClose();
 	}
+
 	function handleKeydown(e: KeyboardEvent) {
 		const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+
 		if (key === 'Escape') {
 			if (mode === 'insert') {
 				enterNormalMode();
@@ -74,26 +83,30 @@
 			e.preventDefault();
 			return;
 		}
+
 		if (mode === 'normal' && key === 'i') {
 			enterInsertMode();
 			e.preventDefault();
 			return;
 		}
-		if (mode === 'normal' && (key === 't' || key === 'h')) {
+
+		if (mode === 'normal' && key === 't') {
 			e.preventDefault();
-			if (key === 't') {
-				todo = todo === null ? false : null;
-				if (todo === null) makeHabit = false;
-			} else if (key === 'h') {
-				makeHabit = !makeHabit;
-				if (makeHabit) {
-					todo = false;
-				} else {
-					todo = null;
-				}
-			}
+			todo = todo === null ? false : null;
 			return;
 		}
+
+		// normal-mode numeric habit shortcuts
+		if (mode === 'normal') {
+			const preset = PRESETS.find((p) => p.key === key);
+			if (preset) {
+				e.preventDefault();
+				fillPreset(preset.value);
+				enterInsertMode();
+				return;
+			}
+		}
+
 		if (key === 'Enter' && e.metaKey) {
 			e.preventDefault();
 			void handleSubmit();
@@ -113,15 +126,15 @@
 
 		saving = true;
 		try {
-			await Promise.resolve(onSave(value, todo, hour, half, makeHabit));
+			await Promise.resolve(onSave(value, todo, hour, half));
 			text = '';
 			todo = null;
-			makeHabit = false;
 			onClose();
 		} finally {
 			saving = false;
 		}
 	}
+
 	$effect(() => {
 		if (open) {
 			enterInsertMode();
@@ -137,9 +150,6 @@
 		half = (initialHalf ?? fallback.half) as 0 | 1;
 		text = initialTitle ?? '';
 		todo = initialTodo ?? null;
-		if (makeHabit && todo === null) {
-			todo = false;
-		}
 	});
 
 	function fillPreset(s: string) {
@@ -152,7 +162,7 @@
 	<div
 		bind:this={modalEl}
 		in:fade={{ duration: 150 }}
-		class="fixed inset-0 z-[130] flex items-center justify-center bg-stone-900/30 backdrop-blur-sm"
+		class="fixed inset-0 z-[130] flex items-center justify-center bg-stone-900/30 backdrop-blur-sm focus:ring-0 focus:outline-0"
 		role="dialog"
 		aria-modal="true"
 		aria-label="New log"
@@ -162,7 +172,7 @@
 	>
 		<div
 			in:scale={{ start: 0.95, duration: 160 }}
-			class="w-full max-w-xl rounded-xl border border-stone-200 bg-white/95 text-stone-800 shadow-[0_12px_32px_rgba(15,15,15,0.12)]"
+			class="w-full max-w-md rounded-xl border border-stone-200 bg-white/95 text-stone-800 shadow-[0_12px_32px_rgba(15,15,15,0.12)]"
 		>
 			<div class="flex flex-row gap-1 p-3 pb-0 text-xs text-stone-600">
 				<select
@@ -192,6 +202,7 @@
 					</span>
 				</button>
 			</div>
+
 			<div class="flex w-full flex-row items-center">
 				<input
 					bind:this={inputEl}
@@ -203,7 +214,10 @@
 					autocomplete="off"
 				/>
 				{#if todo === false}
-					<div class="relative mr-5 grid h-3 w-3 rounded-full p-3">
+					<div
+						class="relative mr-5 grid h-3 w-3 rounded-full p-3"
+						transition:fly={{ y: 2, duration: 200 }}
+					>
 						<span
 							class="pointer-events-none absolute inset-0 rounded-full border border-[1px] border-stone-400 transition duration-200 ease-out"
 						/>
@@ -212,63 +226,52 @@
 			</div>
 
 			<div class="flex flex-row gap-1 px-4 pb-2">
+				{#each PRESETS as p}
+					<button
+						type="button"
+						class="inline-flex items-center justify-center gap-1 rounded-lg border border-stone-200 px-2 py-1 text-[10px] font-medium text-stone-900 transition"
+						onclick={() => fillPreset(p.value)}
+					>
+						<span class="relative flex h-3 w-3 items-center justify-center">
+							<!-- dot -->
+							<span class={`h-1.5 w-1.5 rounded-full ${p.colorClass}`} />
+							<!-- flying key label in normal mode -->
+							{#if mode === 'normal'}
+								<span
+									class="absolute h-3 w-3 rounded-xs bg-stone-200 text-[8px] text-stone-500"
+									in:fly={{ y: 6, duration: 200 }}
+								>
+									{p.key}
+								</span>
+							{/if}
+						</span>
+
+						<span>{p.label}</span>
+					</button>
+				{/each}
 				<button
-					type="button"
-					class="inline-flex items-center justify-center rounded-lg border border-stone-200 px-2 py-1 text-[10px] font-medium text-stone-900 transition"
-					onclick={() => fillPreset('Read')}
+					class="inline-flex items-center justify-center gap-1 rounded-lg border border-stone-200 px-2 py-1 text-[10px] font-medium text-stone-900 transition"
+					onclick={() => {
+						if (todo === null) todo = false;
+						else todo = null;
+					}}
 				>
-					Read
-				</button>
-				<button
-					type="button"
-					class="inline-flex items-center justify-center rounded-lg border border-stone-200 px-2 py-1 text-[10px] font-medium text-stone-900 transition"
-					onclick={() => fillPreset('Bored')}
-				>
-					Bored
-				</button>
-				<button
-					type="button"
-					class="inline-flex items-center justify-center rounded-lg border border-stone-200 px-2 py-1 text-[10px] font-medium text-stone-900 transition"
-					onclick={() => fillPreset('Gym')}
-				>
-					Gym
+					<span class="relative flex h-3 w-3 items-center justify-center">
+						<span class={`h-2 w-2 rounded-full border border-stone-400`} />
+						{#if mode === 'normal'}
+							<span
+								class="absolute h-3 w-3 rounded-xs bg-stone-200 text-[8px] text-stone-500"
+								in:fly={{ y: 6, duration: 200 }}
+							>
+								t
+							</span>
+						{/if}
+					</span>
+					Todo
 				</button>
 			</div>
-			<div class="flex items-center justify-between gap-2 border-t border-stone-100 p-4 py-3">
-				<div class="flex flex-row items-center gap-2">
-					<button
-						class={`inline-flex items-center justify-center gap-2 rounded-lg ${todo === null ? 'bg-stone-50 text-stone-900' : 'bg-stone-700 text-stone-50'} px-2 py-1 text-xs font-medium  transition  focus-visible:outline-none`}
-						onclick={() => {
-							if (todo === null) todo = false;
-							else todo = null;
-						}}
-					>
-						Todo
-						<div
-							class="flex h-4 w-4 items-center justify-center rounded-sm bg-stone-200 font-mono text-[8px]"
-						>
-							t
-						</div>
-					</button>
-					<button
-						class={`inline-flex items-center justify-center gap-2 rounded-lg ${makeHabit === false ? 'bg-stone-50 text-stone-900' : 'bg-stone-700 text-stone-50'} px-2 py-1 text-xs font-medium  transition  focus-visible:outline-none`}
-						onclick={() => {
-							makeHabit = !makeHabit;
-							if (makeHabit) {
-								todo = false;
-							} else {
-								todo = null;
-							}
-						}}
-					>
-						Habit
-						<div
-							class="flex h-4 w-4 items-center justify-center rounded-sm bg-stone-200 font-mono text-[8px]"
-						>
-							h
-						</div>
-					</button>
-				</div>
+
+			<div class="flex items-center justify-end gap-2 border-t border-stone-100 p-4 py-3">
 				<button
 					class="inline-flex items-center justify-center rounded-lg border border-stone-200 bg-stone-900 px-2 py-1 text-xs font-medium text-white transition hover:bg-stone-800 focus-visible:ring-2 focus-visible:ring-stone-500 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
 					onclick={handleSubmit}

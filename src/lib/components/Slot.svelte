@@ -44,7 +44,6 @@
 		selected?: boolean;
 		habit?: string | null;
 		isCurrent?: boolean;
-		canEditSlot?: boolean;
 	}>();
 
 	const title = $derived(props.title ?? '');
@@ -55,7 +54,6 @@
 	const selected = $derived(props.selected ?? false);
 	const habitPlaceholder = $derived((props.habit ?? '').trim());
 	const isCurrentSlot = $derived(Boolean(props.isCurrent));
-	const canEditSlot = $derived(props.canEditSlot ?? true);
 
 	const trimmed = $derived((title ?? '').trim());
 	const isFilled = $derived(trimmed.length > 0);
@@ -85,7 +83,7 @@
 	);
 
 	const showTodo = $derived(todo !== null);
-	const canOpen = $derived(editable && canEditSlot && !habitPlaceholder);
+	const canOpen = $derived(editable && !habitPlaceholder);
 
 	function handleSlotClick() {
 		if (todo !== null) {
@@ -131,7 +129,7 @@
 	{#if showTodo}
 		<div
 			class="relative ml-3 grid h-3 w-3 place-items-center rounded-full focus:outline-none {todo
-				? 'bg-stone-900'
+				? 'bg-stone-700'
 				: ''}"
 		>
 			{#if todo}
