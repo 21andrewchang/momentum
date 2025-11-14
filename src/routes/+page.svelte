@@ -1358,7 +1358,7 @@
 	});
 </script>
 
-<div class="flex h-dvh w-full flex-col justify-center overflow-clip bg-stone-50 p-10">
+<div class="flex h-dvh w-full flex-col justify-center overflow-clip bg-stone-50 p-10 pt-20">
 	<div class="flex flex-row space-x-4">
 		<div class="flex flex-col space-y-1">
 			<div class="text-stone-50">T</div>

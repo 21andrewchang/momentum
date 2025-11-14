@@ -133,7 +133,7 @@
 		<div
 			class="relative ml-3 grid h-3 w-3 place-items-center rounded-full focus:outline-none {todo
 				? 'bg-stone-700'
-				: ''}"
+				: 'border border-stone-400'}"
 		>
 			{#if todo}
 				<svg viewBox="0 0 24 24" class="h-3 w-3 text-stone-50" fill="none">
@@ -146,9 +146,7 @@
 					/>
 				</svg>
 			{:else}
-				<span
-					class="pointer-events-none absolute inset-0 rounded-full border border-[1px] border-stone-400 transition duration-200 ease-out"
-				></span>
+				<svg viewBox="0 0 24 24" class="h-3 w-3 text-stone-50" fill="none"> </svg>
 			{/if}
 		</div>
 	{/if}

@@ -7,8 +7,8 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import type { Session } from '$lib/session';
 	import type { User } from '@supabase/supabase-js';
-import { TRACKED_PLAYERS, type TrackedPlayerKey } from '$lib/trackedPlayers';
-import { formatLocalTimestamp } from '$lib/time';
+	import { TRACKED_PLAYERS, type TrackedPlayerKey } from '$lib/trackedPlayers';
+	import { formatLocalTimestamp } from '$lib/time';
 
 	type Person = { label: string; user_id: string };
 	type Goal = { title: string; due_date: string };
@@ -447,26 +447,26 @@ import { formatLocalTimestamp } from '$lib/time';
 <OnlineCount dedupe={false} />
 {#if $session.user}
 	<div
-		class="pointer-events-none fixed top-3 left-3 z-50 flex flex-col items-start"
+		class="pointer-events-none fixed top-4 left-3 z-50 flex flex-col items-start"
 		bind:this={dateMenuEl}
 	>
 		<div class="pointer-events-auto relative">
 			<button
 				type="button"
-				class="flex items-center gap-2 rounded-md px-2 py-1 text-sm font-semibold text-stone-700 transition hover:bg-stone-200/50"
+				class="flex w-26 items-center justify-center gap-2 rounded-sm text-xs text-stone-700 transition hover:bg-stone-200/50"
 				onclick={() => {
 					dayHistoryOpen = !dayHistoryOpen;
 				}}
 				aria-expanded={dayHistoryOpen}
 			>
 				<span>{todayLabel}</span>
-				<span class="text-xs font-semibold text-emerald-600">
+				<div class="w-10 text-end text-xs font-semibold text-stone-800">
 					{currentCombinedPct != null ? `${currentCombinedPct}%` : '—%'}
-				</span>
+				</div>
 			</button>
 			{#if dayHistoryOpen}
 				<div
-					class="absolute top-full left-0 z-50 mt-2 rounded-md border border-stone-200 bg-white/95 text-sm text-stone-700"
+					class="absolute top-full left-0 z-50 rounded-sm bg-stone-50 text-xs text-stone-700"
 					role="dialog"
 					aria-label="Previous days completion"
 				>
@@ -477,7 +477,7 @@ import { formatLocalTimestamp } from '$lib/time';
 							{#each dayHistoryRows as row}
 								{@const jointPct = combinedPercent(row.values)}
 								<div
-									class="flex items-center gap-2 rounded-md px-2 py-1 text-sm font-semibold whitespace-nowrap text-stone-700 transition hover:bg-stone-200/50"
+									class="flex w-26 items-center justify-center gap-2 rounded-sm text-xs text-stone-700 transition hover:bg-stone-200/50"
 								>
 									<span>
 										{formatDisplayDate(row.date, {
@@ -485,7 +485,9 @@ import { formatLocalTimestamp } from '$lib/time';
 											day: 'numeric'
 										})}
 									</span>
-									<div class="text-xs font-semibold text-stone-800">{jointPct ?? '—'}%</div>
+									<div class="w-10 text-end text-xs font-semibold text-stone-800">
+										{jointPct ?? '—'}%
+									</div>
 								</div>
 							{/each}
 						</div>
@@ -497,9 +499,9 @@ import { formatLocalTimestamp } from '$lib/time';
 	{#if activeGoal}
 		{@const daysRemaining = daysUntilDue(activeGoal.due_date)}
 		{@const dueLabel = formatDaysUntilText(daysRemaining)}
-		<div class="pointer-events-none fixed top-3 left-1/2 z-40 -translate-x-1/2 py-1">
+		<div class="pointer-events-none fixed top-4 left-1/2 z-40 -translate-x-1/2">
 			<div
-				class="pointer-events-auto flex items-center gap-2 px-3 py-1 text-sm font-semibold tracking-wide text-stone-800 uppercase"
+				class="pointer-events-auto flex items-center gap-2 text-sm font-semibold tracking-wide text-stone-800 uppercase"
 			>
 				<span>{activeGoal.title || 'Goal'}</span>
 				{#if dueLabel}
