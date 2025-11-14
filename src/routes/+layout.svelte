@@ -383,7 +383,9 @@
 				.order('due_date', { ascending: true })
 				.limit(1)
 				.maybeSingle();
+			console.log('data', data);
 			if (error) {
+				console.log('error', error);
 				if (error.code === 'PGRST116') {
 					activeGoal = null;
 					return;
