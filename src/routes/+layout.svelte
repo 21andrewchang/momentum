@@ -3,7 +3,7 @@
 	import '../app.css';
 	import OnlineCount from '$lib/components/OnlineCount.svelte';
 	import { writable, type Writable } from 'svelte/store';
-    import { page } from '$app/stores';
+	import { page } from '$app/stores';
 	import { supabase } from '$lib/supabaseClient';
 	import favicon from '$lib/assets/favicon.svg';
 	import type { Session } from '$lib/session';
@@ -16,13 +16,13 @@
 	type PlayerDisplay = { label: string; user_id: string | null };
 	type HistoryRow = { date: string; values: Record<TrackedPlayerKey, number | null> };
 
-    const links = [
+	const links = [
 		{ href: '/manifesto', label: 'Manifesto' },
 		{ href: '/fundamentals', label: 'Fundamentals' },
 		{ href: '/collection', label: 'Collection' }
 	];
 
-    const isActive = (href: string, pathname: string) => {
+	const isActive = (href: string, pathname: string) => {
 		if (href === '/') return pathname === '/';
 		return pathname === href || pathname.startsWith(href + '/');
 	};
@@ -522,27 +522,31 @@
 				{/if}
 			</div>
 		</div>
-	</div>
+	{/if}
 {:else}
-    <nav class="fixed top-5 left-0 w-full flex justify-center items-center">
-        <a href="/" style="font-family: 'Cormorant Garamond', serif"class="absolute left-6 text-xl tracking-wide text-stone-700">
-            founder zoo.
-        </a>
+	<nav class="fixed top-5 left-0 flex w-full items-center justify-center">
+		<a
+			href="/"
+			style="font-family: 'Cormorant Garamond', serif"
+			class="absolute left-6 text-xl tracking-wide text-stone-700"
+		>
+			founder zoo.
+		</a>
 
-        <div class="flex gap-6 text-xs text-stone-400">
-            {#each links as link}
-                <a 
-                    href={link.href} 
-                    class={`transition-colors duration-200 ease-out ${
-                        isActive(link.href, $page.url.pathname)
-                            ? 'text-stone-800'
-                            : 'text-stone-400 hover:text-stone-800'
-                    }`}
-                >
-                    {link.label}
-                </a>
-            {/each}
-        </div>
-    </nav>
+		<div class="flex gap-6 text-xs text-stone-400">
+			{#each links as link}
+				<a
+					href={link.href}
+					class={`transition-colors duration-200 ease-out ${
+						isActive(link.href, $page.url.pathname)
+							? 'text-stone-800'
+							: 'text-stone-400 hover:text-stone-800'
+					}`}
+				>
+					{link.label}
+				</a>
+			{/each}
+		</div>
+	</nav>
 {/if}
 {@render children()}
