@@ -24,25 +24,18 @@
 				'Mastery comes from hyperfixation on one thing and one thing only. Pick a niche and get so obsessed with it that you become the best.'
 			]
 		},
-		{
-			id: 'fundamentals',
-			title: 'fundamentals',
-			paragraphs: [
-				"Build the fundamentals first. You can't win a game without first learning how to farm gold. The same is true for building a company and life in general."
-			]
-		},
+		// {
+		// 	id: 'fundamentals',
+		// 	title: 'fundamentals',
+		// 	paragraphs: [
+		// 		"Build the fundamentals first. You can't win a game without first learning how to farm gold. The same is true for building a company and life in general."
+		// 	]
+		// },
 		// {
 		// 	id: 'minimap',
 		// 	title: 'minimap',
 		// 	paragraphs: ['Ignoring the minimap is how days are wasted.']
 		// },
-		{
-			id: 'pathing',
-			title: 'pathing',
-			paragraphs: [
-				'You fall behind not by doing too little, but by trying to do everything at once. Do things sequentially and with intent; you can only clear one camp at a time.'
-			]
-		}
 	];
 </script>
 

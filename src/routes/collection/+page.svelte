@@ -178,9 +178,9 @@
 <div in:fade={{ duration: 200, delay: 200 }}>
     <div class="h-dvh w-full flex justify-center overflow-y-auto scrollbar-hide" style="font-family: 'Cormorant Garamond', serif" bind:this={scrollContainer} onscroll={handleScroll}>
         <div class="w-1/3 text-justify pt-[25vh] selection:bg-stone-600 selection:text-stone-100">
-            <section class="mb-10">
+            <section class="mb-4">
                 <h1
-                    class="text-stone-500 text-4xl tracking-wide mb-8"
+                    class="text-stone-500 text-4xl tracking-wide mb-3"
                 >
                     Collection
                 </h1>
@@ -255,7 +255,7 @@
                             >
                                 {item.term}
                             </span>
-                            <span class="text-stone-400 text-xs"> - </span>
+                            <span class="text-stone-400 text-xs" style="font-family: 'Inter', sans-serif"> - </span>
                             <span class="text-stone-600 text-md">
                                 {item.definition}
                             </span>

@@ -1,62 +1,201 @@
 <script lang="ts">
     import { fade } from 'svelte/transition';
 
-	type Section = {
-		id: string;
+    type SectionId = 'micro' | 'macro';
+
+    const navItems: { id: SectionId; label: string }[] = [
+        { id: 'micro', label: 'Micro' },
+        { id: 'macro', label: 'Macro' }
+    ]
+
+    let currentSection: SectionId = 'micro';
+    let hoveredNav: SectionId | null = null;
+
+	type MicroSection = {
 		title: string;
-		paragraphs: string[];
+		description: string;
 	};
 
-	const sections: Section[] = [
+	const microSections: MicroSection[] = [
 		{
-			id: 'exercise',
 			title: 'exercise',
-			paragraphs: [
-				'Exercise is the foundation of all physical and mental health. It releases endorphins to boost mood, reduces stress, and improves blood flow to the brain. It allows you to clear your mind and let your subconscious processes run. And you also get to look good.'
-			]
+			description: 'Exercise is the foundation of all physical and mental health. It releases endorphins to boost mood, reduces stress, and improves blood flow to the brain. It allows you to clear your mind and let your subconscious processes run. And you also get to look good.'
 		},
 		{
-			id: 'reading',
 			title: 'reading',
-			paragraphs: [
-				'Reading is exercise for your mind. It improves your ability to focus deeply on a single thread of thought. Reading sharpens your critical thinking, learning how to question assumptions and connect ideas. Consistent reading in a field compounds into expertise. Reading changes the way you think.'
-			]
+			description: 'Reading is exercise for the mind. It improves your ability to focus deeply on a single thread of thought. Reading sharpens your critical thinking, learning how to question assumptions and connect ideas. Consistent reading in a field compounds into expertise. Reading changes the way you think.'
 		},
 		{
-			id: 'boredom',
 			title: 'boredom',
-			paragraphs: [
-				'Boredom is unsettling. It forces you to be alone with your thoughts, emotions, desires. Allowing yourself to be bored will train you to face discomfort and alter your brain to seek fulfillment from unfamiliar sources. You will learn to appreciate the things you previously deemed mundane.'
-			]
+			description: 'Boredom is unsettling. It forces you to be alone with your thoughts, emotions, desires. Allowing yourself to be bored will train you to face discomfort and alter your brain to seek fulfillment from unfamiliar sources. You will learn to appreciate the things you previously deemed mundane.'
 		}
-        // {
-		// 	id: 'dopamine',
-		// 	title: 'dopamine',
-		// 	paragraphs: [
-		// 		'Dopamine spikes when you anticipate a reward, and these spikes create a baseline level of enjoyment. If this baseline is high from social media, gambling, or other addictive or reward-seeking behaviors, everything else seems dull. Your brain becomes fried.'
-		// 	]
-		// }
 	];
+
+    type MacroSection = {
+        title: string;
+        description: string;
+    };
+
+    const macroSections: MacroSection[] = [
+        {
+            title: 'pathing',
+			description: 'You fall behind not by doing too little, but by trying to do everything at once. Do things sequentially and with intent; you can only clear one camp at a time.'
+        },
+        {
+			title: 'dopamine',
+			description: 'Dopamine spikes when you anticipate a reward, and these spikes create a baseline level of enjoyment. If this baseline is high from social media, gambling, or other addictive or reward-seeking behaviors, everything else seems dull. Your brain becomes fried.'
+		}
+    ];
+
+    let microEl: HTMLElement | null = null;
+    let macroEl: HTMLElement | null = null;
+
+    let scrollContainer: HTMLDivElement | null = null;
+
+    function handleScroll() {
+        if (!scrollContainer) return;
+
+        const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+        const maxScroll = scrollHeight - clientHeight;
+
+        if (maxScroll <= 0) {
+            currentSection = 'micro';
+            return;
+        }
+
+        const progress = scrollTop / maxScroll;
+
+        if (progress < 0.75) {
+            currentSection = 'micro';
+        } else {
+            currentSection = 'macro';
+        }
+    }
+
+    function scrollToSection(id: SectionId) {
+        const map: Record<SectionId, HTMLElement | null> = {
+            micro: microEl,
+            macro: macroEl
+        };
+
+        const target = map[id];
+        if (!target || !scrollContainer) return;
+
+        const containerTop = scrollContainer.getBoundingClientRect().top;
+        const elementTop = target.getBoundingClientRect().top;
+        const offset = elementTop - containerTop;
+
+        const gap = scrollContainer.clientHeight * 0.1;
+        
+        const targetTop = scrollContainer.scrollTop + offset - gap;
+
+        scrollContainer.scrollTo({
+            top: Math.max(0, targetTop),
+            behavior: 'smooth'
+        });
+    }
 </script>
 
 <div in:fade={{ duration: 200, delay: 200 }}>
-    <div class="w-1/3 mx-auto flex flex-col items-center justify-center h-dvh text-justify selection:bg-stone-600 selection:text-stone-100" style="font-family: 'Cormorant Garamond', serif">
-        <div class="flex flex-col">
-            {#each sections as section}
-                <h1 class="text-stone-700 text-lg tracking-wide mb-1 italic">
-                    {section.title}
+    <div class="h-dvh w-full flex justify-center overflow-y-auto scrollbar-hide" style="font-family: 'Cormorant Garamond', serif" bind:this={scrollContainer} onscroll={handleScroll}>
+        <div class="w-1/3 text-justify pt-[25vh] selection:bg-stone-600 selection:text-stone-100">
+            <section class="mb-4">
+                <h1
+                    class="text-stone-500 text-4xl tracking-wide mb-3"
+                >
+                    Fundamentals
+                </h1>
+                <p class="text-stone-600 text-md">
+                    Build the fundamentals first. You can't win a game without first learning how to farm gold. The same is true for building a company and life in general.
+                </p>
+            </section>
+
+            <div class="h-[1px] w-full rounded-full bg-stone-200 mb-16"></div>
+
+            <section id="micro" bind:this={microEl} class="mb-16">
+                <h1
+                    class="text-stone-500 text-3xl tracking-wide mb-6"
+                >
+                    Micro
                 </h1>
 
-                {#each section.paragraphs as paragraph, i}
-                    <p
-                        class={`text-stone-600 text-md ${
-                            i < section.paragraphs.length - 1 ? 'mb-2' : 'mb-5'
-                        }`}
+                <div class="space-y-4">
+                    {#each microSections as section}
+                        <div class="flex flex-col">
+                            <h2
+                                class="text-stone-700 text-lg tracking-wide mb-1 italic"
+                            >
+                                {section.title}
+                            </h2>
+                            <p class="text-stone-600 text-md">
+                                {section.description}
+                            </p>
+                        </div>
+                    {/each}
+                </div>
+            </section>
+
+            <section id="macro" bind:this={macroEl} class="pb-[25vh]">
+                <h1
+                    class="text-stone-500 text-3xl tracking-wide mb-6"
+                >
+                    Macro
+                </h1>
+
+                <div class="space-y-4">
+                    {#each macroSections as section}
+                        <div class="flex flex-col">
+                            <h2
+                                class="text-stone-700 text-lg tracking-wide mb-1 italic"
+                            >
+                                {section.title}
+                            </h2>
+                            <p class="text-stone-600 text-md">
+                                {section.description}
+                            </p>
+                        </div>
+                    {/each}
+                </div>
+            </section>
+
+            <div class="fixed right-6 top-1/4 flex flex-col items-center">
+                {#each navItems as item}
+                    <button
+                        type="button"
+                        onclick={() => scrollToSection(item.id)}
+                        onmouseenter={() => hoveredNav = item.id}
+                        onmouseleave={() => hoveredNav = null}
+                        class="group flex flex-col items-center"
                     >
-                        {paragraph}
-                    </p>
+                        <div class="relative h-4 w-28 overflow-hidden flex items-center justify-end">
+                            <span
+                                class={`absolute right-0 h-px w-4 rounded-full bg-stone-400 origin-right transition-transform transition-colors duration-150
+                                    ${
+                                        hoveredNav === item.id
+                                            ? 'scale-x-0'
+                                            : 'scale-x-100'
+                                    }
+                                    ${
+                                        currentSection === item.id
+                                            ? 'bg-stone-800'
+                                            : 'bg-stone-400'
+                                    }
+                                }`}
+                            ></span>
+
+                            <span 
+                                class={`absolute right-0 text-[14px] tracking-wide italic whitespace-nowrap transition-all duration-200 ${
+                                    hoveredNav === item.id 
+                                        ? 'translate-x-0 opacity-100 text-stone-800' 
+                                        : 'translate-x-4 opacity-0 text-stone-400' 
+                                }`}
+                            >
+                                {item.label}
+                            </span>
+                        </div>
+                    </button>
                 {/each}
-            {/each}
+            </div>
         </div>
     </div>
 </div>
