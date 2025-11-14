@@ -158,6 +158,11 @@
 		toHour: number;
 		toHalf: 0 | 1;
 	};
+	type PendingDelete = {
+		user_id: string;
+		hour: number;
+		half: 0 | 1;
+	};
 
 	const createEmptySlot = (): SlotValue => ({ title: '', todo: null });
 	let slotsByUser = $state<Record<string, Record<number, SlotRow>>>({});
@@ -207,6 +212,8 @@
 	let hoverSlot = $state<SelectedSlot | null>(null);
 	let pendingMove = $state<PendingMove | null>(null);
 	let isMoveSubmitting = $state(false);
+	let pendingDelete = $state<PendingDelete | null>(null);
+	let isDeleteSubmitting = $state(false);
 	let dragImageEl: HTMLElement | null = null;
 	const pendingMoveSummary = $derived.by(() => {
 		if (!pendingMove) return null;
@@ -216,14 +223,30 @@
 		const destinationTitle = (getTitle(user_id, toHour, toHalf) ?? '').trim();
 		const destinationHabit = (getHabitTitle(user_id, toHour, toHalf) ?? '').trim();
 		const destinationTodo = getTodo(user_id, toHour, toHalf);
+		const destinationHasContent =
+			destinationTitle.length > 0 || destinationHabit.length > 0 || destinationTodo !== null;
 		return {
 			slotLabel: sourceTitle || sourceHabit || 'this slot',
 			fromLabel: formatSlotLabel(fromHour, fromHalf),
 			toLabel: formatSlotLabel(toHour, toHalf),
 			destinationLabel: destinationTitle || destinationHabit || null,
-			hasDestinationContent:
-				destinationTitle.length > 0 || destinationHabit.length > 0 || destinationTodo !== null,
-			isHabit: sourceHabit.length > 0
+			hasDestinationContent: destinationHasContent,
+			isHabit: sourceHabit.length > 0,
+			mode: destinationHasContent ? 'swap' : 'move'
+		};
+	});
+	const pendingDeleteSummary = $derived.by(() => {
+		if (!pendingDelete) return null;
+		const { user_id, hour, half } = pendingDelete;
+		const title = (getTitle(user_id, hour, half) ?? '').trim();
+		const habit = (getHabitTitle(user_id, hour, half) ?? '').trim();
+		const todo = getTodo(user_id, hour, half);
+		const hasContent = title.length > 0 || habit.length > 0 || todo !== null;
+		return {
+			slotLabel: title || habit || 'this slot',
+			locationLabel: formatSlotLabel(hour, half),
+			hasContent,
+			isHabit: habit.length > 0
 		};
 	});
 
@@ -534,6 +557,18 @@
 		setSelectedSlot({ hourIndex: nextIndex, half: selectedSlot.half });
 		return true;
 	}
+	function promptDeleteSelectedSlot() {
+		if (!viewerUserId || !selectedSlot) return false;
+		const hour = hours[selectedSlot.hourIndex];
+		if (hour === undefined) return false;
+		if (!slotHasContent(viewerUserId, hour, selectedSlot.half)) return false;
+		pendingDelete = {
+			user_id: viewerUserId,
+			hour,
+			half: selectedSlot.half
+		};
+		return true;
+	}
 
 	function activateSelectedSlotFromKeyboard() {
 		if (!viewerUserId || !selectedSlot) return false;
@@ -651,13 +686,18 @@
 		const source = draggingSlot;
 		resetDragState();
 		if (source.hour === hour && source.half === half) return;
-		pendingMove = {
+		const move: PendingMove = {
 			user_id,
 			fromHour: source.hour,
 			fromHalf: source.half,
 			toHour: hour,
 			toHalf: half
 		};
+		if (shouldConfirmMove(move)) {
+			pendingMove = move;
+		} else {
+			void submitMove(move);
+		}
 	}
 	function handleSlotDragEnd() {
 		resetDragState();
@@ -704,7 +744,7 @@
 			}
 			return;
 		}
-		if (!['h', 'j', 'k', 'l', 'Enter', 'i', 'n'].includes(normalized)) return;
+		if (!['h', 'j', 'k', 'l', 'Enter', 'i', 'n', 'd'].includes(normalized)) return;
 		hoverSlot = null;
 		ensureSelectionExists();
 		if (!selectedSlot) return;
@@ -733,6 +773,9 @@
 			case 'n':
 				hjklSlot = selectedSlot;
 				handled = openSelectedSlotEditorFromKeyboard(true);
+				break;
+			case 'd':
+				handled = promptDeleteSelectedSlot();
 				break;
 		}
 		if (handled) event.preventDefault();
@@ -955,11 +998,21 @@
 		pendingMove = null;
 	}
 	async function confirmPendingMove() {
-		if (!pendingMove || isMoveSubmitting) return;
+		if (!pendingMove) return;
+		const move = pendingMove;
+		const success = await submitMove(move);
+		if (success) pendingMove = null;
+	}
+	function shouldConfirmMove(move: PendingMove) {
+		const { user_id, fromHour, fromHalf, toHour, toHalf } = move;
+		const sourceHabitName = (getHabitTitle(user_id, fromHour, fromHalf) ?? '').trim();
+		if (sourceHabitName.length > 0) return true;
+		return slotHasContent(user_id, toHour, toHalf);
+	}
+	async function submitMove(move: PendingMove): Promise<boolean> {
 		isMoveSubmitting = true;
 		try {
-			const success = await moveSlot(pendingMove);
-			if (success) pendingMove = null;
+			return await moveSlot(move);
 		} finally {
 			isMoveSubmitting = false;
 		}
@@ -1081,7 +1134,42 @@
 	setHabitTitle(user_id, fromHour, fromHalf, nextSourceHabit);
 
 	return true;
-}
+	}
+
+	function cancelPendingDelete() {
+		if (isDeleteSubmitting) return;
+		pendingDelete = null;
+	}
+	async function confirmPendingDelete() {
+		if (!pendingDelete || isDeleteSubmitting) return;
+		isDeleteSubmitting = true;
+		try {
+			const success = await deleteSlot(pendingDelete);
+			if (success) pendingDelete = null;
+		} finally {
+			isDeleteSubmitting = false;
+		}
+	}
+	async function deleteSlot(action: PendingDelete): Promise<boolean> {
+		const { user_id, hour, half } = action;
+		if (viewerUserId !== user_id) return false;
+		const day_id = dayIdByUser[user_id];
+		if (day_id) {
+			const { error } = await supabase
+				.from('hours')
+				.delete()
+				.eq('day_id', day_id)
+				.eq('hour', hour)
+				.eq('half', half === 1);
+			if (error) {
+				console.error('slot delete error', error);
+				return false;
+			}
+		}
+
+		setTitle(user_id, hour, half, '', null);
+		return true;
+	}
 
 	function slotKey(u: string, date: string, h: number, half: 0 | 1) {
 		return `${u}|${date}|${h}|${half}`;
@@ -1633,7 +1721,21 @@
 	destinationLabel={pendingMoveSummary?.destinationLabel ?? null}
 	hasDestinationContent={pendingMoveSummary?.hasDestinationContent ?? false}
 	isHabit={pendingMoveSummary?.isHabit ?? false}
+	mode={pendingMoveSummary?.mode ?? 'move'}
 	loading={isMoveSubmitting}
+/>
+<ConfirmMoveModal
+	open={pendingDelete !== null}
+	onCancel={cancelPendingDelete}
+	onConfirm={() => void confirmPendingDelete()}
+	slotLabel={pendingDeleteSummary?.slotLabel ?? ''}
+	fromLabel={pendingDeleteSummary?.locationLabel ?? ''}
+	toLabel={pendingDeleteSummary?.locationLabel ?? ''}
+	destinationLabel={null}
+	hasDestinationContent={pendingDeleteSummary?.hasContent ?? false}
+	isHabit={pendingDeleteSummary?.isHabit ?? false}
+	mode="delete"
+	loading={isDeleteSubmitting}
 />
 
 <style>

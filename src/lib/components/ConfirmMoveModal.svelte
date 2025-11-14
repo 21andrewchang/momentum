@@ -11,6 +11,7 @@
 		destinationLabel = null,
 		hasDestinationContent = false,
 		isHabit = false,
+		mode = 'move',
 		loading = false
 	} = $props<{
 		open?: boolean;
@@ -22,8 +23,20 @@
 		destinationLabel?: string | null;
 		hasDestinationContent?: boolean;
 		isHabit?: boolean;
+		mode?: 'move' | 'swap' | 'delete';
 		loading?: boolean;
 	}>();
+
+	const isSwap = $derived(mode === 'swap');
+	const isDelete = $derived(mode === 'delete');
+	const actionVerb = $derived(isDelete ? 'Delete' : isSwap ? 'Swap' : 'Move');
+	const actionVerbIng = $derived(isDelete ? 'Deleting…' : isSwap ? 'Swapping…' : 'Moving…');
+	const warningShouldRender = $derived(isDelete || hasDestinationContent);
+	const warningClasses = $derived(
+		isDelete
+			? 'border-rose-200 bg-rose-50 text-rose-900'
+			: 'border-amber-200 bg-amber-50 text-amber-900'
+	);
 
 	function handleBackdropClick(event: MouseEvent) {
 		if (event.target === event.currentTarget) onCancel();
@@ -46,7 +59,9 @@
 		class="fixed inset-0 z-[130] flex items-center justify-center bg-stone-900/30 backdrop-blur-sm"
 		role="dialog"
 		aria-modal="true"
-		aria-label="Move slot confirmation"
+		aria-label={
+			isDelete ? 'Delete slot confirmation' : isSwap ? 'Swap slots confirmation' : 'Move slot confirmation'
+		}
 		tabindex="-1"
 		onclick={handleBackdropClick}
 		onkeydown={handleKeydown}
@@ -56,25 +71,49 @@
 			class="w-full max-w-md rounded-xl border border-stone-200 bg-white/95 text-stone-800 shadow-[0_20px_45px_rgba(36,35,32,0.15)]"
 		>
 			<div class="space-y-3 px-5 py-5 text-sm text-stone-600">
-				<div class="text-base font-semibold text-stone-900">Move {isHabit ? 'habit' : 'slot'}?</div>
-				<p>
-					<span class="font-medium text-stone-900"
-						>{slotLabel || (isHabit ? 'this habit' : 'this slot')}</span
-					>
-					from <span class="font-medium text-stone-900">{fromLabel}</span> to
-					<span class="font-medium text-stone-900">{toLabel}</span>?
-				</p>
-				{#if hasDestinationContent}
-					<div
-						class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"
-					>
-						This will replace
-						{#if destinationLabel}
-							<span class="font-medium">"{destinationLabel}"</span>
+				<div class="text-base font-semibold text-stone-900">
+					{#if isDelete}
+						Delete {isHabit ? 'habit' : 'slot'}?
+					{:else if isSwap}
+						Swap slots?
+					{:else}
+						Move {isHabit ? 'habit' : 'slot'}?
+					{/if}
+				</div>
+				{#if isDelete}
+					<p>
+						Clear
+						<span class="font-medium text-stone-900"
+							>{slotLabel || (isHabit ? 'this habit' : 'this slot')}</span
+						>
+						at <span class="font-medium text-stone-900">{fromLabel}</span>?
+					</p>
+				{:else}
+					<p>
+						<span class="font-medium text-stone-900"
+							>{slotLabel || (isHabit ? 'this habit' : 'this slot')}</span
+						>
+						from <span class="font-medium text-stone-900">{fromLabel}</span> to
+						<span class="font-medium text-stone-900">{toLabel}</span>?
+					</p>
+				{/if}
+				{#if warningShouldRender}
+					<div class={`rounded-lg px-3 py-2 text-xs ${warningClasses}`}>
+						{#if isDelete}
+							This will permanently remove any text or TODO for this block.
 						{:else}
-							the existing entry
+							{#if isSwap}
+								This will swap with
+							{:else}
+								This will replace
+							{/if}
+							{#if destinationLabel}
+								<span class="font-medium">"{destinationLabel}"</span>
+							{:else}
+								the existing entry
+							{/if}
+							at <span class="font-medium">{toLabel}</span>.
 						{/if}
-						at <span class="font-medium">{toLabel}</span>.
 					</div>
 				{/if}
 			</div>
@@ -96,7 +135,7 @@
 					}}
 					disabled={loading}
 				>
-					{loading ? 'Moving…' : 'Move'}
+					{loading ? actionVerbIng : actionVerb}
 				</button>
 			</div>
 		</div>
