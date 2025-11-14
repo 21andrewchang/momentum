@@ -72,24 +72,27 @@
         title: string;
         author: string;
         description: string;
+        body: string;
     };
 
     const anthologyItems: AnthologyItem[] = [
         {
             title: 'focus',
             author: 'a',
-            description: 'The double-edged sword of man.'
+            description: 'the double-edged sword of man.',
+            body: 'Focus on one thing only.'
         },
         {
             title: 'optics',
             author: 'n',
-            description: 'Scuplt your image. Every choice is deliberate.'
-            // Shape how you let others perceive you.
+            description: 'scuplt your image.',
+            body: 'Shape how you let others perceive you. Every choice is deliberate.'
         },
         {
             title: 'concision',
             author: 'a',
-            description: 'Less is more.'
+            description: 'less is more.',
+            body: 'Say less, do more.'
         },
     ];
 
@@ -262,14 +265,16 @@
 
                 <div class="space-y-4">
                     {#each anthologyItems as item}
-                        <div class="flex flex-col">
-                            <h2
+                        <div>
+                            <span
                                 class="text-stone-700 text-lg tracking-wide mb-1 italic"
                             >
                                 {item.title}.{item.author}
-                            </h2>
+                            </span>
+                            <span class="text-stone-400 text-xs" style="font-family: 'Inter', sans-serif"> - </span>
+                            <span class="text-stone-600 text-md italic">{item.description}</span>
                             <p class="text-stone-600 text-md">
-                                {item.description}
+                                {item.body}
                             </p>
                         </div>
                     {/each}
