@@ -12,13 +12,14 @@
 	import type { User } from '@supabase/supabase-js';
 	import { TRACKED_PLAYERS, type TrackedPlayerKey } from '$lib/trackedPlayers';
 	import { formatLocalTimestamp } from '$lib/time';
-	import { usePresence, type PresenceSnapshot } from '$lib/presence';
+	import { useGlobalPresence } from '$lib/presence';
 
 	type Person = { label: string; user_id: string };
 	type Goal = { title: string; due_date: string };
 	type PlayerDisplay = { label: string; user_id: string | null };
 	type HistoryRow = { date: string; values: Record<TrackedPlayerKey, number | null> };
 
+	const TRACKED_ROOMS = ['/', '/manifesto', '/collection', '/fundamentals'];
 	const links = [
 		{ href: '/manifesto', label: 'Manifesto' },
 		{ href: '/fundamentals', label: 'Fundamentals' },
@@ -45,6 +46,7 @@
 
 	let authSet = $state<boolean | null>(null);
 	let viewerId = $state<string | null>(null);
+	const store = useGlobalPresence(viewerId);
 
 	const applyUser = (u: User | null) => {
 		session.set({
@@ -412,39 +414,18 @@
 		}
 	}
 
-	let pathname = $state('/');
-	let presenceCounts = $state<PresenceSnapshot>({ tabs: 0, unique: 0, connected: false });
-
-	$effect(() => {
-		const unsubscribe = page.subscribe(($page) => {
-			pathname = $page.url.pathname;
-		});
-		return () => {
-			unsubscribe();
-		};
-	});
+	let presenceCounts = $state({ tabs: 0, unique: 0, connected: false });
 
 	$effect(() => {
 		if (!browser) {
 			presenceCounts = { tabs: 0, unique: 0, connected: false };
 			return;
 		}
-
-		const resolvedRoom = pathname || '/';
-
-		if (!resolvedRoom) {
-			presenceCounts = { tabs: 0, unique: 0, connected: false };
-			return;
-		}
-
-		const store = usePresence(resolvedRoom, viewerId);
-		const unsubscribe = store.subscribe((value) => {
-			presenceCounts = value;
+		const store = useGlobalPresence(viewerId);
+		const unsubscribe = store.subscribe((v) => {
+			presenceCounts = v;
 		});
-
-		return () => {
-			unsubscribe();
-		};
+		return () => unsubscribe();
 	});
 
 	onMount(() => {
@@ -517,7 +498,7 @@
 	<div></div>
 {:else if !authSet && presenceCounts.connected}
 	<div in:fly={{ y: 2, duration: 400 }}>
-		<OnlineCount dedupe={true} counts={presenceCounts} />
+		<OnlineCount dedupe={false} counts={presenceCounts} />
 		<nav class="fixed top-5 left-0 flex w-full items-center justify-center">
 			<a
 				href="/"
@@ -545,7 +526,7 @@
 	</div>
 {:else if authSet && $session.user && currentCombinedPct && presenceCounts.connected}
 	<div in:fly={{ y: 2, duration: 200, delay: 100 }}>
-		<OnlineCount dedupe={true} counts={presenceCounts} />
+		<OnlineCount dedupe={false} counts={presenceCounts} />
 		<div
 			class="pointer-events-none fixed top-5 left-4 z-50 flex flex-col items-start"
 			bind:this={dateMenuEl}
