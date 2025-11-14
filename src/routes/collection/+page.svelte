@@ -176,16 +176,15 @@
 </script>
 
 <div in:fade={{ duration: 200, delay: 200 }}>
-    <div class="h-dvh w-full flex justify-center overflow-y-auto scrollbar-hide" bind:this={scrollContainer} onscroll={handleScroll}>
+    <div class="h-dvh w-full flex justify-center overflow-y-auto scrollbar-hide" style="font-family: 'Cormorant Garamond', serif" bind:this={scrollContainer} onscroll={handleScroll}>
         <div class="w-1/3 text-justify pt-[25vh] selection:bg-stone-600 selection:text-stone-100">
             <section class="mb-10">
                 <h1
-                    style="font-family: 'Cormorant Garamond', serif"
                     class="text-stone-500 text-4xl tracking-wide mb-8"
                 >
                     Collection
                 </h1>
-                <p class="text-stone-600 text-sm">
+                <p class="text-stone-600 text-md">
                     Our works, readings, and lexicon.
                 </p>
             </section>
@@ -194,7 +193,6 @@
 
             <section id="portfolio" bind:this={portfolioEl} class="mb-16">
                 <h1
-                    style="font-family: 'Cormorant Garamond', serif"
                     class="text-stone-500 text-3xl tracking-wide mb-6"
                 >
                     Portfolio
@@ -204,14 +202,13 @@
                     {#each portfolioSections as section}
                         <div class="flex flex-col">
                             <h2
-                                style="font-family: 'Cormorant Garamond', serif"
                                 class="text-stone-700 text-lg tracking-wide mb-1 italic"
                             >
                                 {section.title}
                             </h2>
 
                             {#each section.paragraphs as paragraph}
-                                <p class="text-stone-600 text-sm mb-2">
+                                <p class="text-stone-600 text-md mb-2">
                                     {paragraph}
                                 </p>
                             {/each}
@@ -222,7 +219,6 @@
 
             <section id="library" bind:this={libraryEl} class="mb-16">
                 <h1
-                    style="font-family: 'Cormorant Garamond', serif"
                     class="text-stone-500 text-3xl tracking-wide mb-6"
                 >
                     Library
@@ -232,12 +228,11 @@
                     {#each libraryItems as item}
                         <div class="flex flex-col">
                             <h2
-                                style="font-family: 'Cormorant Garamond', serif"
                                 class="text-stone-700 text-lg tracking-wide mb-1 italic"
                             >
                                 {item.title}
                             </h2>
-                            <p class="text-stone-600 text-sm">
+                            <p class="text-stone-600 text-md">
                                 {item.description}
                             </p>
                         </div>
@@ -247,7 +242,6 @@
 
             <section id="glossary" bind:this={glossaryEl} class="pb-[25vh]">
                 <h1
-                    style="font-family: 'Cormorant Garamond', serif"
                     class="text-stone-500 text-3xl tracking-wide mb-6"
                 >
                     Glossary
@@ -257,13 +251,12 @@
                     {#each glossary as item}
                         <div>
                             <span
-                                style="font-family: 'Cormorant Garamond', serif"
                                 class="text-stone-700 text-lg tracking-wide mb-1 italic"
                             >
                                 {item.term}
                             </span>
                             <span class="text-stone-400 text-xs"> - </span>
-                            <span class="text-stone-600 text-sm">
+                            <span class="text-stone-600 text-md">
                                 {item.definition}
                             </span>
                         </div>
@@ -297,7 +290,6 @@
                             ></span>
 
                             <span 
-                                style="font-family: 'Cormorant Garamond', serif"
                                 class={`absolute right-0 text-[14px] tracking-wide italic whitespace-nowrap transition-all duration-200 ${
                                     hoveredNav === item.id 
                                         ? 'translate-x-0 opacity-100 text-stone-800' 
