@@ -1,16 +1,16 @@
 <script lang="ts">
     import { fade } from 'svelte/transition';
-    import { onMount } from 'svelte';
 
-    type TabId = 'portfolio' | 'library' | 'glossary';
+    type SectionId = 'portfolio' | 'library' | 'glossary';
 
-    const navItems: { id: TabId; label: string }[] = [
+    const navItems: { id: SectionId; label: string }[] = [
         { id: 'portfolio', label: 'Portfolio' },
         { id: 'library', label: 'Library' },
         { id: 'glossary', label: 'Glossary' }
     ]
 
-    let currentSection: TabId = 'portfolio';
+    let currentSection: SectionId = 'portfolio';
+    let hoveredNav: SectionId | null = null;
 
 	type PortfolioSection = {
         title: string;
@@ -71,11 +71,10 @@
             title: 'The Dip',
             description: 'How to get unstuck. And how to know when to quit.'
         },
-
-        {
-            title: 'The Mom Test',
-            description: 'How to validate your startup idea. Not for moms.'
-        },
+        // {
+        //     title: 'The Mom Test',
+        //     description: 'How to validate your startup idea. Not for moms.'
+        // },
     ];
 
     type GlossaryItem = {
@@ -126,52 +125,63 @@
     let libraryEl: HTMLElement | null = null;
     let glossaryEl: HTMLElement | null = null;
 
-    function scrollToSection(id: TabId) {
-        const el = id === 'portfolio' ? portfolioEl : id === 'library' ? libraryEl : glossaryEl;
-        el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    let scrollContainer: HTMLDivElement | null = null;
 
-    onMount(() => {
-        const sectionMap: { id: TabId; el: HTMLElement | null }[] = [
-            { id: 'portfolio', el: portfolioEl },
-            { id: 'library', el: libraryEl },
-            { id: 'glossary', el: glossaryEl }
-        ];
+    function handleScroll() {
+        if (!scrollContainer) return;
 
-        const observer = new IntersectionObserver(
-            (entries) => {
-                for (const entry of entries) {
-                    if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
-                        const id = (entry.target as HTMLElement).dataset.section as TabId;
-                        if (id) {
-                            currentSection = id;
-                        }
-                    }
-                }
-            },
-            {
-                root: null,
-                threshold: 0.5
-            }
-        );
+        const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+        const maxScroll = scrollHeight - clientHeight;
 
-        for (const { id, el } of sectionMap) {
-            if (!el) continue;
-            el.dataset.section = id;
-            observer.observe(el);
+        if (maxScroll <= 0) {
+            currentSection = 'portfolio';
+            return;
         }
 
-        return () => observer.disconnect();
-    });
+        const progress = scrollTop / maxScroll;
+
+        // change thresholds if you add/remove sections
+        if (progress < 0.45) {
+            currentSection = 'portfolio';
+        } else if (progress < 0.9) {
+            currentSection = 'library';
+        } else {
+            currentSection = 'glossary';
+        }
+    }
+
+    function scrollToSection(id: SectionId) {
+        const map: Record<SectionId, HTMLElement | null> = {
+            portfolio: portfolioEl,
+            library: libraryEl,
+            glossary: glossaryEl
+        };
+
+        const target = map[id];
+        if (!target || !scrollContainer) return;
+
+        const containerTop = scrollContainer.getBoundingClientRect().top;
+        const elementTop = target.getBoundingClientRect().top;
+        const offset = elementTop - containerTop;
+
+        const gap = scrollContainer.clientHeight * 0.1;
+        
+        const targetTop = scrollContainer.scrollTop + offset - gap;
+
+        scrollContainer.scrollTo({
+            top: Math.max(0, targetTop),
+            behavior: 'smooth'
+        });
+    }
 </script>
 
 <div in:fade={{ duration: 200, delay: 200 }}>
-    <div class="min-h-dvh w-full flex justify-center overflow-y-auto">
-        <div class="w-1/3 text-justify pt-[25vh] pb-[25vh] selection:bg-stone-600 selection:text-stone-100">
+    <div class="h-dvh w-full flex justify-center overflow-y-auto scrollbar-hide" bind:this={scrollContainer} onscroll={handleScroll}>
+        <div class="w-1/3 text-justify pt-[25vh] selection:bg-stone-600 selection:text-stone-100">
             <section class="mb-10">
                 <h1
                     style="font-family: 'Cormorant Garamond', serif"
-                    class="text-stone-500 text-3xl tracking-wide mb-8"
+                    class="text-stone-500 text-4xl tracking-wide mb-8"
                 >
                     Collection
                 </h1>
@@ -185,7 +195,7 @@
             <section id="portfolio" bind:this={portfolioEl} class="mb-16">
                 <h1
                     style="font-family: 'Cormorant Garamond', serif"
-                    class="text-stone-500 text-2xl tracking-wide mb-6"
+                    class="text-stone-500 text-3xl tracking-wide mb-6"
                 >
                     Portfolio
                 </h1>
@@ -195,7 +205,7 @@
                         <div class="flex flex-col">
                             <h2
                                 style="font-family: 'Cormorant Garamond', serif"
-                                class="text-stone-700 text-md tracking-wide mb-1 italic"
+                                class="text-stone-700 text-lg tracking-wide mb-1 italic"
                             >
                                 {section.title}
                             </h2>
@@ -213,7 +223,7 @@
             <section id="library" bind:this={libraryEl} class="mb-16">
                 <h1
                     style="font-family: 'Cormorant Garamond', serif"
-                    class="text-stone-500 text-2xl tracking-wide mb-6"
+                    class="text-stone-500 text-3xl tracking-wide mb-6"
                 >
                     Library
                 </h1>
@@ -223,7 +233,7 @@
                         <div class="flex flex-col">
                             <h2
                                 style="font-family: 'Cormorant Garamond', serif"
-                                class="text-stone-700 text-md tracking-wide mb-1 italic"
+                                class="text-stone-700 text-lg tracking-wide mb-1 italic"
                             >
                                 {item.title}
                             </h2>
@@ -235,10 +245,10 @@
                 </div>
             </section>
 
-            <section id="glossary" bind:this={glossaryEl}>
+            <section id="glossary" bind:this={glossaryEl} class="pb-[25vh]">
                 <h1
                     style="font-family: 'Cormorant Garamond', serif"
-                    class="text-stone-500 text-2xl tracking-wide mb-6"
+                    class="text-stone-500 text-3xl tracking-wide mb-6"
                 >
                     Glossary
                 </h1>
@@ -248,7 +258,7 @@
                         <div>
                             <span
                                 style="font-family: 'Cormorant Garamond', serif"
-                                class="text-stone-700 text-md tracking-wide mb-1 italic"
+                                class="text-stone-700 text-lg tracking-wide mb-1 italic"
                             >
                                 {item.term}
                             </span>
@@ -266,22 +276,33 @@
                     <button
                         type="button"
                         onclick={() => scrollToSection(item.id)}
+                        onmouseenter={() => hoveredNav = item.id}
+                        onmouseleave={() => hoveredNav = null}
                         class="group flex flex-col items-center"
                     >
-                        <div class="relative h-4 w-20 overflow-hidden flex items-center justify-end">
+                        <div class="relative h-4 w-28 overflow-hidden flex items-center justify-end">
                             <span
-                                class={`absolute right-0 h-px w-4 rounded-full bg-stone-400 origin-right transition-transform duration-200 ${
-                                    currentSection === item.id ? 'scale-x-0' : 'scale-x-100 group-hover:scale-x-0'
+                                class={`absolute right-0 h-px w-4 rounded-full bg-stone-400 origin-right transition-transform transition-colors duration-150
+                                    ${
+                                        hoveredNav === item.id
+                                            ? 'scale-x-0'
+                                            : 'scale-x-100'
+                                    }
+                                    ${
+                                        currentSection === item.id
+                                            ? 'bg-stone-800'
+                                            : 'bg-stone-400'
+                                    }
                                 }`}
                             ></span>
 
                             <span 
                                 style="font-family: 'Cormorant Garamond', serif"
-                                class={`absolute right-0 text-[10px] tracking-wide uppercase whitespace-nowrap transition-all duration-200 ${
-                                    currentSection === item.id
-                                        ? 'translate-x-0 opacity-100 text-stone-800'
-                                        : 'translate-x-4 opacity-0 text-stone-400 group-hover:opacity-100 group-hover:text-stone-800 group-hover:translate-x-0'
-                                    }`}
+                                class={`absolute right-0 text-[14px] tracking-wide italic whitespace-nowrap transition-all duration-200 ${
+                                    hoveredNav === item.id 
+                                        ? 'translate-x-0 opacity-100 text-stone-800' 
+                                        : 'translate-x-4 opacity-0 text-stone-400' 
+                                }`}
                             >
                                 {item.label}
                             </span>
@@ -292,4 +313,3 @@
         </div>
     </div>
 </div>
-

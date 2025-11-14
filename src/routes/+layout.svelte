@@ -498,13 +498,13 @@
 {:else if !authSet && presenceCounts.connected}
 	<div in:fly={{ y: 2, duration: 400 }}>
 		<OnlineCount dedupe={false} counts={presenceCounts} />
-		<nav class="fixed top-5 left-0 flex w-full items-center justify-center">
+		<nav class="fixed pt-5 pb-5 h-15 left-0 flex w-full items-center justify-center bg-white selection:bg-stone-600 selection:text-stone-100">
 			<a
 				href="/"
 				style="font-family: 'Cormorant Garamond', serif"
 				class="absolute left-5 text-xl tracking-wide text-stone-700"
 			>
-				founder zoo.
+				founders zoo.
 			</a>
 
 			<div class="flex gap-6 text-xs text-stone-400">
@@ -546,7 +546,7 @@
 				</button>
 				{#if dayHistoryOpen}
 					<div
-						class="absolute top-full left-0 z-50 rounded-sm bg-stone-50 text-xs text-stone-700"
+						class="absolute top-full left-0 z-50 rounded-sm bg-white text-xs text-stone-700"
 						role="dialog"
 						aria-label="Previous days completion"
 					>
