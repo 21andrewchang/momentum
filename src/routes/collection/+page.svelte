@@ -7,12 +7,11 @@
 		paragraphs: string[];
 	};
 
-    type TabId = 'portfolio' | 'library' | 'glossary';
+    type TabId = 'portfolio' | 'library';
 
     const tabs: { id: TabId; label: string }[] = [
         { id: 'portfolio', label: 'Portfolio' },
-        { id: 'library', label: 'Library' },
-        { id: 'glossary', label: 'Glossary' },
+        { id: 'library', label: 'Library' }
     ]
 
     let activeTab: TabId = 'portfolio';
@@ -124,13 +123,13 @@
 <div in:fade={{ duration: 200, delay: 200 }}>
     <div class="h-dvh w-full flex justify-center">
         <div class="w-1/3 mt-[20vh] text-justify selection:bg-stone-600 selection:text-stone-100">
-            <div class="flex flex-col selection:text-stone-800">
+            <div class="flex flex-col">
                 <div class="mb-6 flex gap-4">
                     {#each tabs as tab}
                         <button
                             type="button"
-                            class={`italic text-[14px] tracking-wide transition-colors duration-200 ease-out
-                                selection:bg-stone-800 selection:text-stone-100
+                            class={`text-[14px] tracking-wide transition-colors duration-200 ease-out
+                                selection:text-stone-100
                                 ${
                                     activeTab === tab.id
                                         ? 'text-stone-800'
@@ -183,9 +182,10 @@
                                     </p>
                                 </div>
                             {/each}
-                        </div>
-                    {:else if activeTab === 'glossary'}
-                        <div class="space-y-3" in:fade={{ duration: 200, delay: 200 }}>
+                            <br>
+                            <div style="font-family: 'Cormorant Garamond', serif" class="space-y-3">
+                                Glossary
+                            </div>
                             {#each glossary as item}
                                 <div>
                                     <span
