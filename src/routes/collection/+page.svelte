@@ -271,7 +271,7 @@
                 </div>
             </section>
             
-            <div class="fixed right-6 top-1/4 -translate-y-1/2 flex flex-col items-center">
+            <div class="fixed right-6 top-1/4 flex flex-col items-center">
                 {#each navItems as item}
                     <button
                         type="button"
