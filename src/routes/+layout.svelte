@@ -456,6 +456,7 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
+<OnlineCount dedupe={true} />
 {#if $session.user}
 	<div
 		class="pointer-events-none fixed top-4 left-3 z-50 flex flex-col items-start"
