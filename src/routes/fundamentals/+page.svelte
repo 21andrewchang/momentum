@@ -20,7 +20,7 @@
 	const microSections: MicroSection[] = [
 		{
 			title: 'exercise',
-			description: 'Exercise is the foundation of all physical and mental health. It releases endorphins to boost mood, reduces stress, and improves blood flow to the brain. It allows you to clear your mind and let your subconscious processes run. And you also get to look good.'
+			description: 'Exercise is the foundation of physical and mental health. It releases endorphins to boost mood, reduces stress, and improves blood flow to the brain. It allows you to clear your mind and let your subconscious processes run. You also get to look good.'
 		},
 		{
 			title: 'reading',
