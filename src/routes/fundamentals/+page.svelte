@@ -105,7 +105,8 @@
     const nMicro = microSections.length;
     const nMacro = macroSections.length;
 
-    const baseMicroItems = 4;
+    const baseMicroTitle = 3;
+    const baseMicroItems = baseMicroTitle + 1;
     const baseMacroTitle = baseMicroItems + 2 * nMicro;
 
 
@@ -136,7 +137,7 @@
         <section id="micro" bind:this={microEl} class="mb-16">
             <h1
                 class="line text-stone-500 text-3xl tracking-wide mb-6"
-                style={`animation-delay: ${3 * lineDelay}s;`}
+                style={`animation-delay: ${baseMicroTitle * lineDelay}s;`}
             >
                 Micro
             </h1>
@@ -194,13 +195,14 @@
         </section>
 
         <div class="fixed right-6 top-1/4 flex flex-col items-center">
-            {#each navItems as item}
+            {#each navItems as item, i}
                 <button
                     type="button"
                     onclick={() => scrollToSection(item.id)}
                     onmouseenter={() => hoveredNav = item.id}
                     onmouseleave={() => hoveredNav = null}
-                    class="group flex flex-col items-center"
+                    class="group flex flex-col items-center line"
+                    style={`animation-delay: ${(i*3) * lineDelay}s;`}
                 >
                     <div class="relative h-4 w-28 overflow-hidden flex items-center justify-end">
                         <span
