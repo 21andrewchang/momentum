@@ -14,10 +14,12 @@
 		editable?: boolean;
 		onSelect?: () => void;
 		onToggleTodo?: () => void;
+		onPrimaryAction?: () => boolean;
 		selected?: boolean;
 		habit?: string | null;
 		isCurrent?: boolean;
 		habitStreak?: PlayerStreak | null;
+		cutState?: 'source' | 'preview' | null;
 	}>();
 
 	const title = $derived(props.title ?? '');
@@ -25,10 +27,12 @@
 	const onSelect = $derived(props.onSelect ?? (() => {}));
 	const todo = $derived(props.todo ?? null);
 	const onToggleTodo = $derived(props.onToggleTodo ?? (() => {}));
+	const onPrimaryAction = $derived(props.onPrimaryAction ?? (() => false));
 	const selected = $derived(props.selected ?? false);
 	const habitPlaceholder = $derived((props.habit ?? '').trim());
 	const isCurrentSlot = $derived(Boolean(props.isCurrent));
 	const habitStreak = $derived(props.habitStreak ?? null);
+	const cutState = $derived(props.cutState ?? null);
 	const habitStreakLabel = $derived(() => {
 		if (!habitStreak || habitStreak.length <= 0) return null;
 		return `${habitStreak.kind === 'positive' ? '' : '-'}${habitStreak.length}`;
@@ -65,6 +69,7 @@
 	const canOpen = $derived(editable && !habitPlaceholder);
 
 	function handleSlotClick() {
+		if (onPrimaryAction()) return;
 		if (todo !== null) {
 			onToggleTodo();
 			return;
@@ -181,6 +186,8 @@
 	class:ring-stone-400={selected}
 	class:ring-offset-1={selected}
 	class:ring-offset-stone-50={selected}
+	class:slot-cut-preview={cutState === 'preview'}
+	class:slot-cut-source={cutState === 'source'}
 	role={canOpen ? 'button' : undefined}
 	onclick={handleSlotClick}
 	onkeydown={handleSlotKeydown}
@@ -351,5 +358,14 @@
 		to {
 			stroke-dashoffset: 0;
 		}
+	}
+
+	.slot-cut-preview {
+		transform: scale(1.05);
+		box-shadow: 0 14px 30px rgba(15, 15, 15, 0.18);
+	}
+	.slot-cut-source {
+		opacity: 0.45;
+		transform: scale(0.95);
 	}
 </style>

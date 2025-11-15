@@ -163,6 +163,12 @@
 		hour: number;
 		half: 0 | 1;
 	};
+	type CutSlot = {
+		user_id: string;
+		hour: number;
+		half: 0 | 1;
+		value: SlotValue;
+	};
 
 	const createEmptySlot = (): SlotValue => ({ title: '', todo: null });
 	let slotsByUser = $state<Record<string, Record<number, SlotRow>>>({});
@@ -226,10 +232,13 @@
 	let dragHoverSlot = $state<SelectedSlot | null>(null);
 	let hoverSlot = $state<SelectedSlot | null>(null);
 	let pendingMove = $state<PendingMove | null>(null);
+	let pendingMoveSource = $state<'drag' | 'cut' | null>(null);
 	let isMoveSubmitting = $state(false);
 	let pendingDelete = $state<PendingDelete | null>(null);
 	let isDeleteSubmitting = $state(false);
 	let dragImageEl: HTMLElement | null = null;
+	let cutSlot = $state<CutSlot | null>(null);
+	let cutDestination = $state<{ hour: number; half: 0 | 1 } | null>(null);
 	const pendingMoveSummary = $derived.by(() => {
 		if (!pendingMove) return null;
 		const { user_id, fromHour, fromHalf, toHour, toHalf } = pendingMove;
@@ -264,6 +273,15 @@
 			hasContent,
 			isHabit: habit.length > 0
 		};
+	});
+	const cutPreviewTarget = $derived.by(() => {
+		if (!viewerUserId || !cutSlot || cutSlot.user_id !== viewerUserId) return null;
+		if (cutDestination) return cutDestination;
+		const ref = hoverSlot ?? selectedSlot;
+		if (!ref) return { hour: cutSlot.hour, half: cutSlot.half };
+		const hour = hours[ref.hourIndex];
+		if (hour === undefined) return { hour: cutSlot.hour, half: cutSlot.half };
+		return { hour, half: ref.half };
 	});
 
 	const logModalHabitStreaks = $derived.by(() => {
@@ -325,6 +343,32 @@
 		const row = slotsByUser[user_id]?.[h];
 		if (!row) return createEmptySlot();
 		return half01 === 0 ? row.first : row.second;
+	}
+	function isCutSource(user_id: string, h: number, half01: 0 | 1) {
+		return Boolean(
+			cutSlot && cutSlot.user_id === user_id && cutSlot.hour === h && cutSlot.half === half01
+		);
+	}
+	function displaySlotValue(user_id: string, h: number, half01: 0 | 1): SlotValue {
+		const base = getSlot(user_id, h, half01);
+		if (!cutSlot || cutSlot.user_id !== user_id) return base;
+		const preview = cutPreviewTarget ?? { hour: cutSlot.hour, half: cutSlot.half };
+		const isPreview =
+			preview !== null && preview.hour === h && preview.half === half01 && cutSlot !== null;
+		const isSource = isCutSource(user_id, h, half01);
+		if (isPreview) return cutSlot.value;
+		if (isSource) return createEmptySlot();
+		return base;
+	}
+	function cutStateForSlot(user_id: string, h: number, half01: 0 | 1): 'preview' | 'source' | null {
+		if (!cutSlot || cutSlot.user_id !== user_id) return null;
+		const preview = cutPreviewTarget ?? { hour: cutSlot.hour, half: cutSlot.half };
+		const isPreview =
+			preview !== null && preview.hour === h && preview.half === half01 && cutSlot !== null;
+		const isSource = isCutSource(user_id, h, half01) && !isPreview;
+		if (isPreview) return 'preview';
+		if (isSource) return 'source';
+		return null;
 	}
 
 	function getTitle(user_id: string, h: number, half01: 0 | 1) {
@@ -475,6 +519,16 @@
 		const hasTodayEntry = habitHasTodayEntryByUser[user_id] ?? emptyHabitTodayEntryRecord();
 		const slotElapsed = slotHasElapsed(h, half01);
 		return HABIT_STREAK_KEYS.reduce((acc, key) => {
+			const promptActive =
+				habitCheckPrompt &&
+				habitCheckPrompt.user_id === user_id &&
+				habitCheckPrompt.habitHour === h &&
+				habitCheckPrompt.habitHalf === half01 &&
+				habitCheckPrompt.habitKey === key;
+			if (promptActive) {
+				acc[key] = (fallbackRecord ?? record)?.[key] ?? null;
+				return acc;
+			}
 			const useCurrent = slotElapsed && hasTodayEntry[key];
 			const source = useCurrent ? record : fallbackRecord;
 			acc[key] = source?.[key] ?? null;
@@ -487,18 +541,6 @@
 		const key = normalizeHabitName(habitName);
 		if (!key) return null;
 		const view = habitStreakRecordForSlot(user_id, h, half01);
-		const record = habitStreaksByUser[user_id];
-		const fallbackRecord = habitStreaksByUserExcludingToday[user_id];
-		const promptActive =
-			habitCheckPrompt &&
-			habitCheckPrompt.user_id === user_id &&
-			habitCheckPrompt.habitHour === h &&
-			habitCheckPrompt.habitHalf === half01 &&
-			habitCheckPrompt.habitKey === key;
-		if (promptActive) {
-			const fallback = fallbackRecord ?? record;
-			return fallback?.[key] ?? null;
-		}
 		return view[key] ?? null;
 	}
 
@@ -520,6 +562,7 @@
 	}
 	function canDragSlot(user_id: string, h: number, half01: 0 | 1) {
 		if (!viewerUserId || viewerUserId !== user_id) return false;
+		if (isCutSource(user_id, h, half01)) return false;
 		return slotHasContent(user_id, h, half01);
 	}
 	async function insertHabitHours(
@@ -615,6 +658,69 @@
 		setSelectedSlot({ hourIndex: selectedSlot.hourIndex, half: 1 });
 		return true;
 	}
+	function cancelCutSlot() {
+		cutSlot = null;
+		cutDestination = null;
+	}
+	function cutSlotAt(user_id: string, hour: number, half: 0 | 1) {
+		if (!viewerUserId || viewerUserId !== user_id) return false;
+		if (!slotHasContent(user_id, hour, half)) return false;
+		cancelCutSlot();
+		const sourceValue = getSlot(user_id, hour, half);
+		cutSlot = {
+			user_id,
+			hour,
+			half,
+			value: { title: sourceValue.title ?? '', todo: sourceValue.todo }
+		};
+		cutDestination = null;
+		const hourIndex = getHourIndex(hour);
+		if (hourIndex !== -1) {
+			setSelectedSlot({ hourIndex, half });
+		}
+		return true;
+	}
+	function cutSelectedSlot() {
+		if (!viewerUserId || !selectedSlot) return false;
+		const hour = hours[selectedSlot.hourIndex];
+		if (hour === undefined) return false;
+		return cutSlotAt(viewerUserId, hour, selectedSlot.half);
+	}
+	function pasteCutSlotToTarget(hour: number, half: 0 | 1) {
+		if (!cutSlot) return false;
+		const { user_id, hour: fromHour, half: fromHalf } = cutSlot;
+		if (hour === fromHour && half === fromHalf) {
+			cancelCutSlot();
+			return true;
+		}
+		const move: PendingMove = {
+			user_id,
+			fromHour,
+			fromHalf,
+			toHour: hour,
+			toHalf: half
+		};
+		cutDestination = { hour, half };
+		if (shouldConfirmMove(move)) {
+			pendingMove = move;
+			pendingMoveSource = 'cut';
+		} else {
+			pendingMoveSource = 'cut';
+			void submitMove(move, 'cut');
+		}
+		return true;
+	}
+	function pasteCutSlotAtSelection() {
+		if (!viewerUserId || !cutSlot || !selectedSlot) return false;
+		const hour = hours[selectedSlot.hourIndex];
+		if (hour === undefined) return false;
+		return pasteCutSlotToTarget(hour, selectedSlot.half);
+	}
+	function maybeHandlePaste(user_id: string, hour: number, half: 0 | 1) {
+		if (!viewerUserId || viewerUserId !== user_id) return false;
+		if (!cutSlot || cutSlot.user_id !== user_id) return false;
+		return pasteCutSlotToTarget(hour, half);
+	}
 
 	function moveSelectionVertical(delta: 1 | -1) {
 		if (!viewerUserId || !selectedSlot) return false;
@@ -640,9 +746,10 @@
 		if (!viewerUserId || !selectedSlot) return false;
 		const hour = hours[selectedSlot.hourIndex];
 		if (hour === undefined) return false;
+		if (maybeHandlePaste(viewerUserId, hour, selectedSlot.half)) return true;
 		const todoValue = getTodo(viewerUserId, hour, selectedSlot.half);
 		if (todoValue !== null) {
-			toggleTodo(viewerUserId, hour, selectedSlot.half);
+			void toggleTodo(viewerUserId, hour, selectedSlot.half);
 			return true;
 		}
 
@@ -658,10 +765,19 @@
 		if (!viewerUserId || !selectedSlot) return false;
 		const hour = hours[selectedSlot.hourIndex];
 		if (hour === undefined) return false;
+		if (maybeHandlePaste(viewerUserId, hour, selectedSlot.half)) return true;
 		const habitName = getHabitTitle(viewerUserId, hour, selectedSlot.half);
 		if ((habitName ?? '').trim().length > 0) return false;
 		openEditor(viewerUserId, hour, selectedSlot.half, normal);
 		return true;
+	}
+	function handleSlotSelect(user_id: string, hour: number, half: 0 | 1, normal: boolean) {
+		if (maybeHandlePaste(user_id, hour, half)) return;
+		openEditor(user_id, hour, half, normal);
+	}
+	function handleSlotToggle(user_id: string, hour: number, half: 0 | 1) {
+		if (maybeHandlePaste(user_id, hour, half)) return;
+		void toggleTodo(user_id, hour, half);
 	}
 
 	function cleanupDragImage() {
@@ -761,8 +877,9 @@
 		};
 		if (shouldConfirmMove(move)) {
 			pendingMove = move;
+			pendingMoveSource = 'drag';
 		} else {
-			void submitMove(move);
+			void submitMove(move, 'drag');
 		}
 	}
 	function handleSlotDragEnd() {
@@ -798,6 +915,11 @@
 		const key = event.key;
 		const normalized = key.length === 1 ? key.toLowerCase() : key;
 		if (normalized === 'Escape') {
+			if (cutSlot) {
+				cancelCutSlot();
+				event.preventDefault();
+				return;
+			}
 			if (hjklSlot) {
 				setSelectedSlot(hjklSlot);
 				hjklSlot = null;
@@ -810,7 +932,7 @@
 			}
 			return;
 		}
-		if (!['h', 'j', 'k', 'l', 'Enter', 'i', 'n', 'd'].includes(normalized)) return;
+		if (!['h', 'j', 'k', 'l', 'Enter', 'i', 'n', 'd', 'x', 'p'].includes(normalized)) return;
 		hoverSlot = null;
 		ensureSelectionExists();
 		if (!selectedSlot) return;
@@ -842,6 +964,12 @@
 				break;
 			case 'd':
 				handled = promptDeleteSelectedSlot();
+				break;
+			case 'x':
+				handled = cutSelectedSlot();
+				break;
+			case 'p':
+				handled = pasteCutSlotAtSelection();
 				break;
 		}
 		if (handled) event.preventDefault();
@@ -1098,12 +1226,20 @@
 	function cancelPendingMove() {
 		if (isMoveSubmitting) return;
 		pendingMove = null;
+		if (pendingMoveSource === 'cut') {
+			cutDestination = null;
+		}
+		pendingMoveSource = null;
 	}
 	async function confirmPendingMove() {
 		if (!pendingMove) return;
 		const move = pendingMove;
-		const success = await submitMove(move);
-		if (success) pendingMove = null;
+		const source = pendingMoveSource;
+		const success = await submitMove(move, source);
+		if (success) {
+			pendingMove = null;
+			pendingMoveSource = null;
+		}
 	}
 	function shouldConfirmMove(move: PendingMove) {
 		const { user_id, fromHour, fromHalf, toHour, toHalf } = move;
@@ -1111,10 +1247,17 @@
 		if (sourceHabitName.length > 0) return true;
 		return slotHasContent(user_id, toHour, toHalf);
 	}
-	async function submitMove(move: PendingMove): Promise<boolean> {
+	async function submitMove(move: PendingMove, source: 'drag' | 'cut' | null = null): Promise<boolean> {
 		isMoveSubmitting = true;
 		try {
-			return await moveSlot(move);
+			const success = await moveSlot(move);
+			if (success && source === 'cut') {
+				cancelCutSlot();
+			}
+			if (success && pendingMoveSource === source) {
+				pendingMoveSource = null;
+			}
+			return success;
 		} finally {
 			isMoveSubmitting = false;
 		}
@@ -1586,6 +1729,7 @@
 		if (!viewerUserId) {
 			selectedSlot = null;
 			hoverSlot = null;
+			cancelCutSlot();
 		}
 
 		try {
@@ -1722,6 +1866,10 @@
 								{/each}
 							{:else}
 								{#each hours as h, hourIndex}
+									{@const slotValueA = displaySlotValue(person.user_id, h, 0)}
+									{@const cutStateA = cutStateForSlot(person.user_id, h, 0)}
+									{@const slotValueB = displaySlotValue(person.user_id, h, 1)}
+									{@const cutStateB = cutStateForSlot(person.user_id, h, 1)}
 									<div
 										class="hover:none flex h-7 w-full flex-row space-x-1"
 										class:opacity-60={viewerUserId && viewerUserId !== person.user_id}
@@ -1743,15 +1891,17 @@
 											ondragend={handleSlotDragEnd}
 										>
 											<Slot
-												title={getTitle(person.user_id, h, 0)}
-												todo={getTodo(person.user_id, h, 0)}
+												title={slotValueA.title}
+												todo={slotValueA.todo}
 												editable={viewerUserId === person.user_id}
-												onSelect={() => openEditor(person.user_id, h, 0, false)}
-												onToggleTodo={() => toggleTodo(person.user_id, h, 0)}
+												onPrimaryAction={() => maybeHandlePaste(person.user_id, h, 0)}
+												onSelect={() => handleSlotSelect(person.user_id, h, 0, false)}
+												onToggleTodo={() => handleSlotToggle(person.user_id, h, 0)}
 												habit={getHabitTitle(person.user_id, h, 0)}
 												habitStreak={habitStreakForSlot(person.user_id, h, 0)}
 												selected={slotIsHighlighted(person.user_id, hourIndex, 0)}
 												isCurrent={slotIsCurrent(h, 0)}
+												cutState={cutStateA}
 											/>
 										</div>
 										<div
@@ -1771,15 +1921,17 @@
 											ondragend={handleSlotDragEnd}
 										>
 											<Slot
-												title={getTitle(person.user_id, h, 1)}
-												todo={getTodo(person.user_id, h, 1)}
+												title={slotValueB.title}
+												todo={slotValueB.todo}
 												editable={viewerUserId === person.user_id}
-												onSelect={() => openEditor(person.user_id, h, 1, false)}
-												onToggleTodo={() => toggleTodo(person.user_id, h, 1)}
+												onPrimaryAction={() => maybeHandlePaste(person.user_id, h, 1)}
+												onSelect={() => handleSlotSelect(person.user_id, h, 1, false)}
+												onToggleTodo={() => handleSlotToggle(person.user_id, h, 1)}
 												habit={getHabitTitle(person.user_id, h, 1)}
 												habitStreak={habitStreakForSlot(person.user_id, h, 1)}
 												selected={slotIsHighlighted(person.user_id, hourIndex, 1)}
 												isCurrent={slotIsCurrent(h, 1)}
+												cutState={cutStateB}
 											/>
 										</div>
 									</div>
