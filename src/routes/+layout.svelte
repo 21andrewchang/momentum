@@ -487,6 +487,8 @@
 
 <svelte:head>
   <link rel="icon" href="/fz.svg" type="image/svg+xml" />
+  <title>founders zoo.</title>
+  <meta name="application-name" content="founders zoo." />
 </svelte:head>
 
 {#if authSet == null}
