@@ -285,8 +285,8 @@
 		return habitStreakRecordForSlot(viewerUserId, h, half);
 	});
 
-	const modalOverlayActive = $derived.by(
-		() => Boolean(logOpen || habitCheckPrompt || todoCarryPrompt || pendingMove || pendingDelete)
+	const modalOverlayActive = $derived.by(() =>
+		Boolean(logOpen || habitCheckPrompt || todoCarryPrompt || pendingMove || pendingDelete)
 	);
 
 	// prevent re-prompting within same slot
@@ -488,39 +488,46 @@
 		};
 	}
 
-	function habitStreakRecordForSlot(user_id: string, h: number, half01: 0 | 1): Record<HabitKey, PlayerStreak | null> {
+	function habitStreakRecordForSlot(
+		user_id: string,
+		h: number,
+		half01: 0 | 1
+	): Record<HabitKey, PlayerStreak | null> {
 		const record = habitStreaksByUser[user_id] ?? emptyHabitStreakRecord();
 		const fallbackRecord = habitStreaksByUserExcludingToday[user_id] ?? record;
 		const hasTodayEntry = habitHasTodayEntryByUser[user_id] ?? emptyHabitTodayEntryRecord();
 		const slotElapsed = slotHasElapsed(h, half01);
 		const slotTodo = getTodo(user_id, h, half01);
 		const slotCompleted = slotTodo === true;
-		return HABIT_STREAK_KEYS.reduce((acc, key) => {
-			const promptActive =
-				habitCheckPrompt &&
-				habitCheckPrompt.user_id === user_id &&
-				habitCheckPrompt.habitHour === h &&
-				habitCheckPrompt.habitHalf === half01 &&
-				habitCheckPrompt.habitKey === key;
-			if (promptActive) {
-				acc[key] = (fallbackRecord ?? record)?.[key] ?? null;
+		return HABIT_STREAK_KEYS.reduce(
+			(acc, key) => {
+				const promptActive =
+					habitCheckPrompt &&
+					habitCheckPrompt.user_id === user_id &&
+					habitCheckPrompt.habitHour === h &&
+					habitCheckPrompt.habitHalf === half01 &&
+					habitCheckPrompt.habitKey === key;
+				if (promptActive) {
+					acc[key] = (fallbackRecord ?? record)?.[key] ?? null;
+					return acc;
+				}
+				const useCurrent = slotCompleted || (slotElapsed && hasTodayEntry[key]);
+				const source = useCurrent ? record : fallbackRecord;
+				let value = source?.[key] ?? null;
+				if (slotCompleted && !slotElapsed) {
+					const base = fallbackRecord?.[key] ?? null;
+					const baseLen = base && base.kind === 'positive' ? base.length : 0;
+					value = {
+						kind: 'positive',
+						length: Math.max(1, baseLen + 1),
+						missesOnLatest: 0
+					};
+				}
+				acc[key] = value;
 				return acc;
-			}
-			const useCurrent = slotCompleted || (slotElapsed && hasTodayEntry[key]);
-			const source = useCurrent ? record : fallbackRecord;
-			let value = source?.[key] ?? null;
-			if (slotCompleted && !slotElapsed) {
-				const base = fallbackRecord?.[key] ?? null;
-				const baseLen = base && base.kind === 'positive' ? base.length : 0;
-				value = {
-					kind: 'positive',
-					length: Math.max(1, baseLen + 1),
-					missesOnLatest: 0
-				};
-			}
-			acc[key] = value;
-			return acc;
-		}, {} as Record<HabitKey, PlayerStreak | null>);
+			},
+			{} as Record<HabitKey, PlayerStreak | null>
+		);
 	}
 
 	function habitStreakForSlot(user_id: string, h: number, half01: 0 | 1): PlayerStreak | null {
@@ -882,6 +889,7 @@
 		hoverSlot = null;
 		return true;
 	}
+
 	function handleSlotPointerEnter(user_id: string, hourIndex: number, half: 0 | 1) {
 		if (!viewerUserId || viewerUserId !== user_id) return;
 		hoverSlot = { hourIndex, half };
@@ -906,16 +914,6 @@
 				cancelCutSlot();
 				event.preventDefault();
 				return;
-			}
-			if (hjklSlot) {
-				setSelectedSlot(hjklSlot);
-				hjklSlot = null;
-				event.preventDefault();
-				return;
-			}
-			if (selectedSlot) {
-				setSelectedSlot(null);
-				event.preventDefault();
 			}
 			return;
 		}
@@ -1096,7 +1094,6 @@
 		return false;
 	}
 
-
 	async function loadPlayerHistoryForUser(user_id: string) {
 		const today = localToday();
 		const lookbackStart = dateStringNDaysAgo(STREAK_LOOKBACK_DAYS);
@@ -1231,7 +1228,10 @@
 		if (sourceHabitName.length > 0) return true;
 		return slotHasContent(user_id, toHour, toHalf);
 	}
-	async function submitMove(move: PendingMove, source: 'drag' | 'cut' | null = null): Promise<boolean> {
+	async function submitMove(
+		move: PendingMove,
+		source: 'drag' | 'cut' | null = null
+	): Promise<boolean> {
 		isMoveSubmitting = true;
 		try {
 			const success = await moveSlot(move);
@@ -1259,28 +1259,28 @@
 		if (!day_id) return false;
 		if (!slotHasContent(user_id, fromHour, fromHalf)) return false;
 
-	const sourceSlot = getSlot(user_id, fromHour, fromHalf);
-	const sourceValue: SlotValue = {
-		title: sourceSlot.title ?? '',
-		todo: sourceSlot.todo
-	};
-	const destinationHadEntry = slotHasContent(user_id, toHour, toHalf);
-	const destinationSlotValue = destinationHadEntry ? getSlot(user_id, toHour, toHalf) : null;
-	const destinationValue: SlotValue | null = destinationSlotValue
-		? { title: destinationSlotValue.title ?? '', todo: destinationSlotValue.todo }
-		: null;
-	const destinationHasHoursContent =
-		destinationValue !== null &&
-		((destinationValue.title ?? '').trim().length > 0 || destinationValue.todo !== null);
-	const sourceHabitName = (getHabitTitle(user_id, fromHour, fromHalf) ?? '').trim();
-	const destinationHabitName = (getHabitTitle(user_id, toHour, toHalf) ?? '').trim();
+		const sourceSlot = getSlot(user_id, fromHour, fromHalf);
+		const sourceValue: SlotValue = {
+			title: sourceSlot.title ?? '',
+			todo: sourceSlot.todo
+		};
+		const destinationHadEntry = slotHasContent(user_id, toHour, toHalf);
+		const destinationSlotValue = destinationHadEntry ? getSlot(user_id, toHour, toHalf) : null;
+		const destinationValue: SlotValue | null = destinationSlotValue
+			? { title: destinationSlotValue.title ?? '', todo: destinationSlotValue.todo }
+			: null;
+		const destinationHasHoursContent =
+			destinationValue !== null &&
+			((destinationValue.title ?? '').trim().length > 0 || destinationValue.todo !== null);
+		const sourceHabitName = (getHabitTitle(user_id, fromHour, fromHalf) ?? '').trim();
+		const destinationHabitName = (getHabitTitle(user_id, toHour, toHalf) ?? '').trim();
 
-	if (destinationHasHoursContent) {
-		const { error: deleteDestErr } = await supabase
-			.from('hours')
-			.delete()
-			.eq('day_id', day_id)
-			.eq('hour', toHour)
+		if (destinationHasHoursContent) {
+			const { error: deleteDestErr } = await supabase
+				.from('hours')
+				.delete()
+				.eq('day_id', day_id)
+				.eq('hour', toHour)
 				.eq('half', toHalf === 1);
 			if (deleteDestErr) {
 				console.error('slot move destination delete error', deleteDestErr);
@@ -1295,16 +1295,14 @@
 			.eq('hour', fromHour)
 			.eq('half', fromHalf === 1);
 
-	if (updateErr) {
-		console.error('slot move error', updateErr);
-		return false;
-	}
+		if (updateErr) {
+			console.error('slot move error', updateErr);
+			return false;
+		}
 
-	setTitle(user_id, toHour, toHalf, sourceValue.title, sourceValue.todo);
-	if (destinationHasHoursContent && destinationValue) {
-		const { error: swapInsertErr } = await supabase
-			.from('hours')
-			.upsert(
+		setTitle(user_id, toHour, toHalf, sourceValue.title, sourceValue.todo);
+		if (destinationHasHoursContent && destinationValue) {
+			const { error: swapInsertErr } = await supabase.from('hours').upsert(
 				{
 					day_id,
 					hour: fromHour,
@@ -1314,42 +1312,40 @@
 				},
 				{ onConflict: 'day_id,hour,half' }
 			);
-		if (swapInsertErr) {
-			console.error('slot swap insert error', swapInsertErr);
+			if (swapInsertErr) {
+				console.error('slot swap insert error', swapInsertErr);
+			}
+			setTitle(user_id, fromHour, fromHalf, destinationValue.title ?? '', destinationValue.todo);
+		} else {
+			setTitle(user_id, fromHour, fromHalf, '', null);
 		}
-		setTitle(user_id, fromHour, fromHalf, destinationValue.title ?? '', destinationValue.todo);
-	} else {
-		setTitle(user_id, fromHour, fromHalf, '', null);
-	}
 
-	if (destinationHabitName.length > 0) {
-		const { error: deleteHabitErr } = await supabase
-			.from('habits')
-			.delete()
-			.eq('user_id', user_id)
-			.eq('hour', toHour)
-			.eq('half', toHalf === 1);
-		if (deleteHabitErr) {
-			console.error('slot move destination habit delete error', deleteHabitErr);
+		if (destinationHabitName.length > 0) {
+			const { error: deleteHabitErr } = await supabase
+				.from('habits')
+				.delete()
+				.eq('user_id', user_id)
+				.eq('hour', toHour)
+				.eq('half', toHalf === 1);
+			if (deleteHabitErr) {
+				console.error('slot move destination habit delete error', deleteHabitErr);
+			}
 		}
-	}
 
-	if (sourceHabitName.length > 0) {
-		const { error: updateHabitErr } = await supabase
+		if (sourceHabitName.length > 0) {
+			const { error: updateHabitErr } = await supabase
 				.from('habits')
 				.update({ hour: toHour, half: toHalf === 1 })
 				.eq('user_id', user_id)
-			.eq('hour', fromHour)
-			.eq('half', fromHalf === 1);
-		if (updateHabitErr) {
-			console.error('habit move error', updateHabitErr);
+				.eq('hour', fromHour)
+				.eq('half', fromHalf === 1);
+			if (updateHabitErr) {
+				console.error('habit move error', updateHabitErr);
+			}
 		}
-	}
 
-	if (destinationHabitName.length > 0) {
-		const { error: insertHabitErr } = await supabase
-			.from('habits')
-			.upsert(
+		if (destinationHabitName.length > 0) {
+			const { error: insertHabitErr } = await supabase.from('habits').upsert(
 				{
 					user_id,
 					name: destinationHabitName,
@@ -1358,17 +1354,17 @@
 				},
 				{ onConflict: 'user_id,hour,half' }
 			);
-		if (insertHabitErr) {
-			console.error('habit swap insert error', insertHabitErr);
+			if (insertHabitErr) {
+				console.error('habit swap insert error', insertHabitErr);
+			}
 		}
-	}
 
-	const nextDestinationHabit = sourceHabitName.length > 0 ? sourceHabitName : null;
-	const nextSourceHabit = destinationHabitName.length > 0 ? destinationHabitName : null;
-	setHabitTitle(user_id, toHour, toHalf, nextDestinationHabit);
-	setHabitTitle(user_id, fromHour, fromHalf, nextSourceHabit);
+		const nextDestinationHabit = sourceHabitName.length > 0 ? sourceHabitName : null;
+		const nextSourceHabit = destinationHabitName.length > 0 ? destinationHabitName : null;
+		setHabitTitle(user_id, toHour, toHalf, nextDestinationHabit);
+		setHabitTitle(user_id, fromHour, fromHalf, nextSourceHabit);
 
-	return true;
+		return true;
 	}
 
 	function cancelPendingDelete() {
@@ -1783,7 +1779,9 @@
 	});
 </script>
 
-<div class="flex h-dvh w-full flex-col justify-center overflow-clip bg-white p-10 pt-20 select-none">
+<div
+	class="flex h-dvh w-full flex-col justify-center overflow-clip bg-white p-10 pt-20 select-none"
+>
 	<div class="flex flex-row space-x-4">
 		{#if isLoading}
 			<div class="flex flex-col space-y-1">
@@ -1967,9 +1965,7 @@
 {#if habitCheckPrompt}
 	<div class="fixed inset-0 z-60 flex items-center justify-center">
 		<div class="w-full max-w-sm rounded-lg bg-white p-4 shadow-lg">
-			<div class="text-xs font-semibold tracking-wide text-stone-500 uppercase">
-				Habit check
-			</div>
+			<div class="text-xs font-semibold tracking-wide text-stone-500 uppercase">Habit check</div>
 			<div class="mt-1 text-sm font-medium text-stone-900">
 				Did you complete {habitCheckPrompt.habitName}?
 			</div>
