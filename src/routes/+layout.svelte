@@ -69,7 +69,7 @@
 	let dayHistoryRows = $state<HistoryRow[]>([]);
 	let dayHistoryOpen = $state(false);
 	let dayHistoryLoading = $state(false);
-	let currentCombinedPct = $state<number | null>(null);
+	let currentCombinedPct = $state<number>(0);
 	let dateMenuEl = $state<HTMLDivElement | null>(null);
 	let activeGoal = $state<Goal | null>(null);
 	let newGoalTitle = $state('');
@@ -196,7 +196,7 @@
 		);
 		if (percents.length !== TRACKED_PLAYERS.length) return null;
 		const product = percents.reduce((acc, pct) => acc * (pct / 100), 1);
-		return Math.round(product * 100);
+		return Math.max(1, Math.round(product * 100));
 	}
 
 	function getCurrentBlockInfo() {
@@ -229,12 +229,12 @@
 			.map((display) => display.user_id)
 			.filter((id): id is string => Boolean(id));
 		if (ids.length === 0) {
-			currentCombinedPct = null;
+			currentCombinedPct = 0;
 			return;
 		}
 		const { hour: currentHour, half: currentHalf, blocksDue } = getCurrentBlockInfo();
 		if (blocksDue === 0) {
-			currentCombinedPct = null;
+			currentCombinedPct = 0;
 			return;
 		}
 		const today = localToday();
@@ -260,7 +260,7 @@
 			}
 			const dayIds = Array.from(dayIdByUser.values());
 			if (dayIds.length === 0) {
-				currentCombinedPct = null;
+				currentCombinedPct = 0;
 				return;
 			}
 
@@ -310,7 +310,7 @@
 			currentCombinedPct = combinedPercent(percentageValues);
 		} catch (error) {
 			console.error('current combined load error', error);
-			currentCombinedPct = null;
+			currentCombinedPct = 0;
 		}
 	}
 
@@ -381,7 +381,7 @@
 		} catch (error) {
 			console.error('tracked player load error', error);
 			dayHistoryRows = [];
-			currentCombinedPct = null;
+			currentCombinedPct = 0;
 		}
 	}
 
