@@ -41,19 +41,19 @@
     const libraryItems: LibraryItem[] = [
         {
             title: 'The Scaling Era',
-            description: 'Everything about the AI revolution.'
+            description: 'The AI revolution.'
         },
         {
             title: 'The Art of Doing Science and Engineering',
-            description: 'How to build something great. Learn from the greatest minds.'
+            description: 'How to build something great.'
         },
         {
             title: 'The Courage to Be Disliked',
-            description: 'Life can be happy and meaningful. Enemies are comrades in disguise.'
+            description: 'Life can be happy and meaningful.'
         },
         {
             title: 'Steve Jobs',
-            description: 'The man who changed the world with a bunch of assholery and a lot of hippie.'
+            description: 'A bunch of assholery and a lot of hippie.'
         },
         {
             title: 'Zero to One',
@@ -61,7 +61,7 @@
         },
         {
             title: 'The Dip',
-            description: 'How to get unstuck. And how to know when to quit.'
+            description: 'How to know when to quit.'
         },
         // {
         //     title: 'The Mom Test',
@@ -165,7 +165,7 @@
             currentSection = null;
             return;
         }
-        if (progress < 0.45) {
+        if (progress < 0.55) {
             currentSection = 'portfolio';
         } else if (progress < 0.9) {
             currentSection = 'library';
