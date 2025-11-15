@@ -917,7 +917,7 @@
 			}
 			return;
 		}
-		if (!['h', 'j', 'k', 'l', 'Enter', 'i', 'n', 'd', 'x', 'p'].includes(normalized)) return;
+		if (!['h', 'j', 'k', 'l', 'Enter', 'i', 'd', 'x', 'p'].includes(normalized)) return;
 		hoverSlot = null;
 		ensureSelectionExists();
 		if (!selectedSlot) return;
@@ -942,10 +942,6 @@
 			case 'i':
 				hjklSlot = selectedSlot;
 				handled = openSelectedSlotEditorFromKeyboard(false);
-				break;
-			case 'n':
-				hjklSlot = selectedSlot;
-				handled = openSelectedSlotEditorFromKeyboard(true);
 				break;
 			case 'd':
 				handled = promptDeleteSelectedSlot();

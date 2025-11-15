@@ -58,6 +58,7 @@
 				onConfirm();
 			}
 			if (event.key === 'n') {
+				event.preventDefault();
 				event.stopPropagation();
 				onCancel();
 			}
