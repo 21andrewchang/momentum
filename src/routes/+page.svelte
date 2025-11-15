@@ -168,6 +168,7 @@
 		hour: number;
 		half: 0 | 1;
 		value: SlotValue;
+		habitTitle: string | null;
 	};
 
 	const createEmptySlot = (): SlotValue => ({ title: '', todo: null });
@@ -360,6 +361,19 @@
 		if (isSource) return createEmptySlot();
 		return base;
 	}
+
+	function displayHabitTitle(user_id: string, h: number, half01: 0 | 1): string | null {
+		const base = getHabitTitle(user_id, h, half01);
+		if (!cutSlot || cutSlot.user_id !== user_id) return base;
+		const preview = cutPreviewTarget ?? { hour: cutSlot.hour, half: cutSlot.half };
+		const isPreview =
+			preview !== null && preview.hour === h && preview.half === half01 && cutSlot !== null;
+		const isSource = isCutSource(user_id, h, half01);
+		if (isPreview) return cutSlot.habitTitle;
+		if (isSource) return null;
+		return base;
+	}
+
 	function cutStateForSlot(user_id: string, h: number, half01: 0 | 1): 'preview' | 'source' | null {
 		if (!cutSlot || cutSlot.user_id !== user_id) return null;
 		const preview = cutPreviewTarget ?? { hour: cutSlot.hour, half: cutSlot.half };
@@ -664,14 +678,17 @@
 	}
 	function cutSlotAt(user_id: string, hour: number, half: 0 | 1) {
 		if (!viewerUserId || viewerUserId !== user_id) return false;
+		const habitName = (getHabitTitle(user_id, hour, half) ?? '').trim();
 		if (!slotHasContent(user_id, hour, half)) return false;
+		if (habitName.length > 0) return false;
 		cancelCutSlot();
 		const sourceValue = getSlot(user_id, hour, half);
 		cutSlot = {
 			user_id,
 			hour,
 			half,
-			value: { title: sourceValue.title ?? '', todo: sourceValue.todo }
+			value: { title: sourceValue.title ?? '', todo: sourceValue.todo },
+			habitTitle: habitName.length > 0 ? habitName : null
 		};
 		cutDestination = null;
 		const hourIndex = getHourIndex(hour);
@@ -1252,6 +1269,12 @@
 		try {
 			const success = await moveSlot(move);
 			if (success && source === 'cut') {
+				if (viewerUserId === move.user_id) {
+					const hourIndex = getHourIndex(move.toHour);
+					if (hourIndex !== -1) {
+						setSelectedSlot({ hourIndex, half: move.toHalf });
+					}
+				}
 				cancelCutSlot();
 			}
 			if (success && pendingMoveSource === source) {
@@ -1897,7 +1920,7 @@
 												onPrimaryAction={() => maybeHandlePaste(person.user_id, h, 0)}
 												onSelect={() => handleSlotSelect(person.user_id, h, 0, false)}
 												onToggleTodo={() => handleSlotToggle(person.user_id, h, 0)}
-												habit={getHabitTitle(person.user_id, h, 0)}
+												habit={displayHabitTitle(person.user_id, h, 0)}
 												habitStreak={habitStreakForSlot(person.user_id, h, 0)}
 												selected={slotIsHighlighted(person.user_id, hourIndex, 0)}
 												isCurrent={slotIsCurrent(h, 0)}
@@ -1927,7 +1950,7 @@
 												onPrimaryAction={() => maybeHandlePaste(person.user_id, h, 1)}
 												onSelect={() => handleSlotSelect(person.user_id, h, 1, false)}
 												onToggleTodo={() => handleSlotToggle(person.user_id, h, 1)}
-												habit={getHabitTitle(person.user_id, h, 1)}
+												habit={displayHabitTitle(person.user_id, h, 1)}
 												habitStreak={habitStreakForSlot(person.user_id, h, 1)}
 												selected={slotIsHighlighted(person.user_id, hourIndex, 1)}
 												isCurrent={slotIsCurrent(h, 1)}

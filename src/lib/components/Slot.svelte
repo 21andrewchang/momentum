@@ -361,11 +361,11 @@
 	}
 
 	.slot-cut-preview {
-		transform: scale(1.05);
+		transform: scale(1.01);
 		box-shadow: 0 14px 30px rgba(15, 15, 15, 0.18);
 	}
 	.slot-cut-source {
-		opacity: 0.45;
+		opacity: 0;
 		transform: scale(0.95);
 	}
 </style>
