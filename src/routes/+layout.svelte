@@ -578,7 +578,7 @@
 			{@const dueLabel = formatDaysUntilText(daysRemaining)}
 			<div class="pointer-events-none fixed top-5 left-1/2 z-40 -translate-x-1/2">
 				<div
-					class="pointer-events-auto flex items-center gap-2 text-sm font-semibold tracking-wide text-stone-800 uppercase"
+					class="pointer-events-auto flex items-center gap-2 text-xs font-semibold tracking-wide text-stone-800 uppercase"
 				>
 					<span>{activeGoal.title || 'Goal'}</span>
 					{#if dueLabel}
