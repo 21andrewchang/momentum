@@ -19,7 +19,7 @@
 		habit?: string | null;
 		isCurrent?: boolean;
 		habitStreak?: PlayerStreak | null;
-		cutState?: 'source' | 'preview' | null;
+		isCut?: boolean;
 	}>();
 
 	const title = $derived(props.title ?? '');
@@ -32,7 +32,6 @@
 	const habitPlaceholder = $derived((props.habit ?? '').trim());
 	const isCurrentSlot = $derived(Boolean(props.isCurrent));
 	const habitStreak = $derived(props.habitStreak ?? null);
-	const cutState = $derived(props.cutState ?? null);
 	const habitStreakLabel = $derived(() => {
 		if (!habitStreak || habitStreak.length <= 0) return null;
 		return `${habitStreak.kind === 'positive' ? '' : '-'}${habitStreak.length}`;
@@ -186,8 +185,7 @@
 	class:ring-stone-400={selected}
 	class:ring-offset-1={selected}
 	class:ring-offset-stone-50={selected}
-	class:slot-cut-preview={cutState === 'preview'}
-	class:slot-cut-source={cutState === 'source'}
+	class:slot-cut-source={Boolean(props.isCut)}
 	role={canOpen ? 'button' : undefined}
 	onclick={handleSlotClick}
 	onkeydown={handleSlotKeydown}
@@ -360,12 +358,7 @@
 		}
 	}
 
-	.slot-cut-preview {
-		transform: scale(1.01);
-		box-shadow: 0 14px 30px rgba(15, 15, 15, 0.18);
-	}
 	.slot-cut-source {
-		opacity: 0;
-		transform: scale(0.95);
+		box-shadow: 0 0 0 1px rgb(248 113 113);
 	}
 </style>

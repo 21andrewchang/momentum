@@ -7,7 +7,6 @@
 	import { browser } from '$app/environment';
 	import { page } from '$app/stores';
 	import { supabase } from '$lib/supabaseClient';
-	import favicon from '$lib/assets/favicon.svg';
 	import type { Session } from '$lib/session';
 	import type { User } from '@supabase/supabase-js';
 	import { TRACKED_PLAYERS, type TrackedPlayerKey } from '$lib/trackedPlayers';
@@ -487,7 +486,7 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
+  <link rel="icon" href="/fz.svg" type="image/svg+xml" />
 </svelte:head>
 
 {#if authSet == null}
