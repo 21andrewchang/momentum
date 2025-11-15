@@ -171,6 +171,7 @@
 	let habitStreaksByUserExcludingToday = $state<
 		Record<string, Record<HabitKey, PlayerStreak | null>>
 	>({});
+	let habitHasTodayEntryByUser = $state<Record<string, Record<HabitKey, boolean>>>({});
 
 	let logOpen = $state(false);
 	type TodoCarryoverPrompt = {
@@ -349,6 +350,15 @@
 			{} as Record<HabitKey, PlayerStreak | null>
 		);
 	}
+	function emptyHabitTodayEntryRecord(): Record<HabitKey, boolean> {
+		return HABIT_STREAK_KEYS.reduce(
+			(acc, key) => {
+				acc[key] = false;
+				return acc;
+			},
+			{} as Record<HabitKey, boolean>
+		);
+	}
 	function habitStreaksForUser(user_id: string | null): Record<HabitKey, PlayerStreak | null> {
 		if (!user_id) return emptyHabitStreakRecord();
 		return habitStreaksByUser[user_id] ?? emptyHabitStreakRecord();
@@ -358,6 +368,11 @@
 	): Record<HabitKey, PlayerStreak | null> {
 		if (!user_id) return emptyHabitStreakRecord();
 		return habitStreaksByUserExcludingToday[user_id] ?? emptyHabitStreakRecord();
+	}
+	function updateHabitTodayEntryFlag(user_id: string, habitKey: HabitKey, value: boolean) {
+		const record = habitHasTodayEntryByUser[user_id] ?? emptyHabitTodayEntryRecord();
+		const nextRecord = { ...record, [habitKey]: value };
+		habitHasTodayEntryByUser = { ...habitHasTodayEntryByUser, [user_id]: nextRecord };
 	}
 	function parseHabitDate(dateStr: string): number | null {
 		const parts = dateStr.split('-');
@@ -456,7 +471,18 @@
 		if (!key) return null;
 		const record = habitStreaksByUser[user_id];
 		const fallbackRecord = habitStreaksByUserExcludingToday[user_id];
-		const useCurrent = slotHasElapsed(h, half01);
+		const hasTodayEntry = habitHasTodayEntryByUser[user_id]?.[key] ?? false;
+		const promptActive =
+			habitCheckPrompt &&
+			habitCheckPrompt.user_id === user_id &&
+			habitCheckPrompt.habitHour === h &&
+			habitCheckPrompt.habitHalf === half01 &&
+			habitCheckPrompt.habitKey === key;
+		if (promptActive) {
+			const fallback = fallbackRecord ?? record;
+			return fallback?.[key] ?? null;
+		}
+		const useCurrent = slotHasElapsed(h, half01) && hasTodayEntry;
 		const source = useCurrent ? record : fallbackRecord ?? record;
 		return source?.[key] ?? null;
 	}
@@ -908,16 +934,28 @@
 				},
 				{} as Record<HabitKey, PlayerStreak | null>
 			);
+			const hasToday = HABIT_STREAK_KEYS.reduce(
+				(acc, key) => {
+					acc[key] = grouped[key].some((record) => record.date === today);
+					return acc;
+				},
+				{} as Record<HabitKey, boolean>
+			);
 			habitStreaksByUser = { ...habitStreaksByUser, [user_id]: streakRecord };
 			habitStreaksByUserExcludingToday = {
 				...habitStreaksByUserExcludingToday,
 				[user_id]: streakRecordExcludingToday
 			};
+			habitHasTodayEntryByUser = { ...habitHasTodayEntryByUser, [user_id]: hasToday };
 		} catch (error) {
 			console.error('load habit streak error', { user_id, error });
 			const empty = emptyHabitStreakRecord();
 			habitStreaksByUser = { ...habitStreaksByUser, [user_id]: empty };
 			habitStreaksByUserExcludingToday = { ...habitStreaksByUserExcludingToday, [user_id]: empty };
+			habitHasTodayEntryByUser = {
+				...habitHasTodayEntryByUser,
+				[user_id]: emptyHabitTodayEntryRecord()
+			};
 		}
 	}
 	function slotHasElapsed(hour: number, half: 0 | 1) {
@@ -950,7 +988,9 @@
 			);
 		if (error) {
 			console.error('habit day status upsert error', error);
+			return;
 		}
+		updateHabitTodayEntryFlag(user_id, habitKey, true);
 	}
 
 	async function loadPlayerHistoryForUser(user_id: string) {

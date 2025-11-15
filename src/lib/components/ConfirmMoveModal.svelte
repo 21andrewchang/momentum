@@ -56,7 +56,7 @@
 {#if open}
 	<div
 		in:fade={{ duration: 150 }}
-		class="fixed inset-0 z-[130] flex items-center justify-center bg-stone-900/30 backdrop-blur-sm"
+		class="fixed inset-0 z-[130] flex items-center justify-center bg-stone-900/30"
 		role="dialog"
 		aria-modal="true"
 		aria-label={

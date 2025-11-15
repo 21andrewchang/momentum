@@ -190,7 +190,7 @@
 	<div
 		bind:this={modalEl}
 		in:fade={{ duration: 150 }}
-		class="fixed inset-0 z-[130] flex items-center justify-center bg-stone-900/30 backdrop-blur-sm focus:ring-0 focus:outline-0"
+		class="fixed inset-0 z-[130] flex items-center justify-center bg-stone-900/30 focus:ring-0 focus:outline-0"
 		role="dialog"
 		aria-modal="true"
 		aria-label="New log"
@@ -200,7 +200,7 @@
 	>
 		<div
 			in:scale={{ start: 0.95, duration: 160 }}
-			class="w-full max-w-md rounded-xl border border-stone-200 bg-white/95 text-stone-800 shadow-[0_12px_32px_rgba(15,15,15,0.12)]"
+			class="w-full max-w-md rounded-xl border border-stone-200 bg-white text-stone-800 shadow-[0_12px_32px_rgba(15,15,15,0.12)]"
 		>
 			<div class="flex flex-row gap-1 p-3 pb-0 text-xs text-stone-600">
 				<select
