@@ -2,13 +2,14 @@
     import { fade } from 'svelte/transition';
 
     type SectionId = 'micro' | 'macro';
+    type CurrentSection = SectionId | null;
 
     const navItems: { id: SectionId; label: string }[] = [
         { id: 'micro', label: 'Micro' },
         { id: 'macro', label: 'Macro' }
     ]
 
-    let currentSection: SectionId = 'micro';
+    let currentSection: CurrentSection = null;
     let hoveredNav: SectionId | null = null;
 
 	type MicroSection = {
@@ -65,6 +66,10 @@
 
         const progress = scrollTop / maxScroll;
 
+        if (progress < 0.175) {
+            currentSection = null;
+            return;
+        }
         if (progress < 0.75) {
             currentSection = 'micro';
         } else {

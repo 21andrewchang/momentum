@@ -2,6 +2,7 @@
     import { fade } from 'svelte/transition';
 
     type SectionId = 'portfolio' | 'library' | 'anthology';
+    type CurrentSection = SectionId | null;
 
     const navItems: { id: SectionId; label: string }[] = [
         { id: 'portfolio', label: 'Portfolio' },
@@ -9,7 +10,7 @@
         { id: 'anthology', label: 'Anthology' }
     ]
 
-    let currentSection: SectionId = 'portfolio';
+    let currentSection: CurrentSection = null;
     let hoveredNav: SectionId | null = null;
 
 	type PortfolioItem = {
@@ -160,6 +161,10 @@
         const progress = scrollTop / maxScroll;
 
         // change thresholds if you add/remove sections
+        if (progress < 0.12) {
+            currentSection = null;
+            return;
+        }
         if (progress < 0.45) {
             currentSection = 'portfolio';
         } else if (progress < 0.9) {
