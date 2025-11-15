@@ -493,6 +493,8 @@
 		const fallbackRecord = habitStreaksByUserExcludingToday[user_id] ?? record;
 		const hasTodayEntry = habitHasTodayEntryByUser[user_id] ?? emptyHabitTodayEntryRecord();
 		const slotElapsed = slotHasElapsed(h, half01);
+		const slotTodo = getTodo(user_id, h, half01);
+		const slotCompleted = slotTodo === true;
 		return HABIT_STREAK_KEYS.reduce((acc, key) => {
 			const promptActive =
 				habitCheckPrompt &&
@@ -504,7 +506,7 @@
 				acc[key] = (fallbackRecord ?? record)?.[key] ?? null;
 				return acc;
 			}
-			const useCurrent = slotElapsed && hasTodayEntry[key];
+			const useCurrent = slotCompleted || (slotElapsed && hasTodayEntry[key]);
 			const source = useCurrent ? record : fallbackRecord;
 			acc[key] = source?.[key] ?? null;
 			return acc;
@@ -641,6 +643,7 @@
 		const habitName = (getHabitTitle(user_id, hour, half) ?? '').trim();
 		if (!slotHasContent(user_id, hour, half)) return false;
 		if (habitName.length > 0) return false;
+		cancelCutSlot();
 		const sourceValue = getSlot(user_id, hour, half);
 		cutSlot = {
 			user_id,

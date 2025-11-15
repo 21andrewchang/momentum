@@ -8,19 +8,19 @@
 		gym: { icon: '🏋️' }
 	};
 
-	const props = $props<{
-		title?: string;
-		todo?: boolean | null;
-		editable?: boolean;
-		onSelect?: () => void;
-		onToggleTodo?: () => void;
-		onPrimaryAction?: () => boolean;
-		selected?: boolean;
-		habit?: string | null;
-		isCurrent?: boolean;
-		habitStreak?: PlayerStreak | null;
-		isCut?: boolean;
-	}>();
+const props = $props<{
+	title?: string;
+	todo?: boolean | null;
+	editable?: boolean;
+	onSelect?: () => void;
+	onToggleTodo?: () => void;
+	onPrimaryAction?: () => boolean;
+	selected?: boolean;
+	habit?: string | null;
+	isCurrent?: boolean;
+	habitStreak?: PlayerStreak | null;
+	isCut?: boolean;
+}>();
 
 	const title = $derived(props.title ?? '');
 	const editable = $derived(props.editable ?? false);
@@ -50,7 +50,7 @@
 	const habitPreset = $derived(HABITS[habitKey]);
 	const isHabit = $derived(Boolean(props.habit));
 
-	const currentClass = $derived(isCurrentSlot ? 'bg-stone-200' : '');
+const currentClass = $derived(isCurrentSlot ? 'bg-stone-200' : '');
 
 	const baseClasses =
 		'flex w-full min-w-0 flex-row items-center rounded-sm p-2 transition overflow-hidden focus:outline-0';
@@ -359,6 +359,7 @@
 	}
 
 	.slot-cut-source {
-		box-shadow: 0 0 0 1px rgb(248 113 113);
+		box-shadow: 0 0 0 2px rgb(248 113 113);
+		border-color: rgb(248 113 113);
 	}
 </style>
