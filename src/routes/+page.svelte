@@ -1141,6 +1141,13 @@
 		logOpen = true;
 	}
 
+	function closeLogModal() {
+		logOpen = false;
+		if (!viewerUserId) return;
+		hoverSlot = null;
+		suppressHoverSelection = true;
+	}
+
 	async function saveLog(text: string, todo: boolean | null, hour: number, half: 0 | 1) {
 		const { user_id } = draft;
 		if (!user_id || hour == null || half == null) return;
@@ -1179,7 +1186,7 @@
 			}
 		}
 
-		logOpen = false;
+		closeLogModal();
 	}
 
 	async function toggleTodo(user_id: string, hour: number, half: 0 | 1) {
@@ -1964,7 +1971,7 @@
 <LogModal
 	normal={editorMode}
 	open={logOpen}
-	onClose={() => (logOpen = false)}
+	onClose={closeLogModal}
 	onSave={saveLog}
 	initialHour={draft.hour}
 	initialHalf={draft.half}
