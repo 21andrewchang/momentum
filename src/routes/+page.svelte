@@ -232,6 +232,7 @@
 	let draggingSlot = $state<DraggingSlot | null>(null);
 	let dragHoverSlot = $state<SelectedSlot | null>(null);
 	let hoverSlot = $state<SelectedSlot | null>(null);
+	let suppressHoverSelection = $state(false);
 	let pendingMove = $state<PendingMove | null>(null);
 	let pendingMoveSource = $state<'drag' | 'cut' | null>(null);
 	let isMoveSubmitting = $state(false);
@@ -892,6 +893,7 @@
 
 	function handleSlotPointerEnter(user_id: string, hourIndex: number, half: 0 | 1) {
 		if (!viewerUserId || viewerUserId !== user_id) return;
+		if (suppressHoverSelection) return;
 		hoverSlot = { hourIndex, half };
 		if (draggingSlot) return;
 		setSelectedSlot({ hourIndex, half });
@@ -1168,6 +1170,14 @@
 		}
 
 		setTitle(user_id, hour, half, text, todo);
+		if (viewerUserId && user_id === viewerUserId) {
+			const hourIndex = getHourIndex(hour);
+			if (hourIndex !== -1) {
+				setSelectedSlot({ hourIndex, half });
+				hoverSlot = null;
+				suppressHoverSelection = true;
+			}
+		}
 
 		logOpen = false;
 	}
@@ -1761,11 +1771,16 @@
 		scheduleClockTick();
 		init();
 		const keyHandler = (event: KeyboardEvent) => handleGlobalKeydown(event);
+		const pointerHandler = () => {
+			if (suppressHoverSelection) suppressHoverSelection = false;
+		};
 		window.addEventListener('keydown', keyHandler);
+		window.addEventListener('pointermove', pointerHandler);
 		requestAnimationFrame(() => (showTimes = true));
 		return () => {
 			stopClockTick();
 			window.removeEventListener('keydown', keyHandler);
+			window.removeEventListener('pointermove', pointerHandler);
 		};
 	});
 
