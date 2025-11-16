@@ -3,24 +3,25 @@
 	type HabitConfig = { icon: string };
 
 	const HABITS: Record<string, HabitConfig> = {
+		wake: { icon: '☀️' },
 		read: { icon: '📖' },
 		bored: { icon: '😵‍💫' },
 		gym: { icon: '🏋️' }
 	};
 
-const props = $props<{
-	title?: string;
-	todo?: boolean | null;
-	editable?: boolean;
-	onSelect?: () => void;
-	onToggleTodo?: () => void;
-	onPrimaryAction?: () => boolean;
-	selected?: boolean;
-	habit?: string | null;
-	isCurrent?: boolean;
-	habitStreak?: PlayerStreak | null;
-	isCut?: boolean;
-}>();
+	const props = $props<{
+		title?: string;
+		todo?: boolean | null;
+		editable?: boolean;
+		onSelect?: () => void;
+		onToggleTodo?: () => void;
+		onPrimaryAction?: () => boolean;
+		selected?: boolean;
+		habit?: string | null;
+		isCurrent?: boolean;
+		habitStreak?: PlayerStreak | null;
+		isCut?: boolean;
+	}>();
 
 	const title = $derived(props.title ?? '');
 	const editable = $derived(props.editable ?? false);
@@ -32,8 +33,9 @@ const props = $props<{
 	const habitPlaceholder = $derived((props.habit ?? '').trim());
 	const isCurrentSlot = $derived(Boolean(props.isCurrent));
 	const habitStreak = $derived(props.habitStreak ?? null);
+	$inspect(habitStreak);
 	const habitStreakLabel = $derived(() => {
-		if (!habitStreak || habitStreak.length <= 0) return null;
+		if (habitStreak == null || !habitStreak || habitStreak.length <= 0) return null;
 		return `${habitStreak.kind === 'positive' ? '' : '-'}${habitStreak.length}`;
 	});
 	const habitStreakClasses = $derived(() => {
@@ -44,13 +46,14 @@ const props = $props<{
 	});
 
 	const trimmed = $derived((title ?? '').trim());
+	$inspect(trimmed);
 	const isFilled = $derived(trimmed.length > 0);
 
 	const habitKey = $derived(habitPlaceholder.toLowerCase());
 	const habitPreset = $derived(HABITS[habitKey]);
 	const isHabit = $derived(Boolean(props.habit));
 
-const currentClass = $derived(isCurrentSlot ? 'bg-stone-200' : '');
+	const currentClass = $derived(isCurrentSlot ? 'bg-stone-200' : '');
 
 	const baseClasses =
 		'flex w-full min-w-0 flex-row items-center rounded-sm p-2 transition overflow-hidden focus:outline-0';
@@ -217,7 +220,7 @@ const currentClass = $derived(isCurrentSlot ? 'bg-stone-200' : '');
 						stroke-linejoin="round"
 					/>
 				</svg>
-				{habitStreak.length}
+				{habitStreak?.length ? habitStreak.length : '0'}
 			</span>
 		{/if}
 	</span>

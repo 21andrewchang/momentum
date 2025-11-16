@@ -102,7 +102,7 @@
 	const TOTAL_BLOCKS_PER_DAY = hours.length * 2; // 16 hours * 2 halves = 32 slots
 	const STREAK_LOOKBACK_DAYS = 60;
 	const DAY_MS = 86_400_000;
-	const HABIT_STREAK_KEYS = ['read', 'gym', 'bored'] as const;
+	const HABIT_STREAK_KEYS = ['read', 'gym', 'bored', 'wake'] as const;
 	type HabitKey = (typeof HABIT_STREAK_KEYS)[number];
 	const loadingPlaceholderColumns = Array.from({ length: 2 });
 	const hh = (n: number) => n.toString().padStart(2, '0');
